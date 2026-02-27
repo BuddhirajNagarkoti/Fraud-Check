@@ -26,14 +26,15 @@ client = genai.Client()
 uploaded_legal_docs = []
 
 def initialize_knowledge_base():
-    """Uploads PDFs from the 'laws' directory to Gemini File API."""
-    docs_to_upload = [
-        {"path": "laws/consumer_protection_act_2075.pdf", "display_name": "Consumer Protection Act 2075"},
-        {"path": "laws/ecommerce_directive_2082.pdf", "display_name": "E-Commerce Directive 2082"}
-    ]
+    """Uploads PDFs from the 'Nepal Laws' directory to Gemini File API."""
+    # Build complete paths so we can run uvicorn from anywhere
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    laws_dir = os.path.join(base_dir, "..", "Nepal Laws")
     
-    # Ensure the laws directory exists
-    os.makedirs("laws", exist_ok=True)
+    docs_to_upload = [
+        {"path": os.path.join(laws_dir, "The Consumer Protection Act, 2075 (2018).pdf"), "display_name": "Consumer Protection Act 2075"},
+        {"path": os.path.join(laws_dir, "Electronic Commerce Act, 2081 (2025).pdf"), "display_name": "E-Commerce Directive 2082"}
+    ]
     
     for doc in docs_to_upload:
         if os.path.exists(doc["path"]):
