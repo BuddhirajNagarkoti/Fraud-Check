@@ -1,6 +1,9 @@
 import os
 import json
+import base64
+import asyncio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -9,172 +12,344 @@ load_dotenv()
 
 app = FastAPI()
 
-# Verify API key
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 if not os.environ.get("GEMINI_API_KEY"):
     raise ValueError("GEMINI_API_KEY environment variable not set")
 
 client = genai.Client()
 
 # ============================================================================
-# KNOWLEDGE BASE SETUP (PDF Documents)
+# KNOWLEDGE BASE SETUP WITH URI CACHING
 # ============================================================================
-# Uploading actual legal PDFs to the Gemini API so the model
-# can reference the exact text. In production, you would upload these once 
-# via a script and save their `uri` to your database, rather 
-# than uploading on every server startup.
+# PDFs are uploaded to Gemini File API once and the URIs are cached to a JSON
+# file so we skip re-uploading on every restart. Gemini file URIs expire after
+# 48 hours, so we verify the URI is still alive before using it.
+
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_CACHE_FILE = os.path.join(_BASE_DIR, "pdf_uri_cache.json")
 
 uploaded_legal_docs = []
 
-def initialize_knowledge_base():
-    """Uploads PDFs from the 'Nepal Laws' directory to Gemini File API."""
-    # Build complete paths so we can run uvicorn from anywhere
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    laws_dir = os.path.join(base_dir, "..", "Nepal Laws")
-    
-    docs_to_upload = [
-        {"path": os.path.join(laws_dir, "The Consumer Protection Act, 2075 (2018).pdf"), "display_name": "Consumer Protection Act 2075"},
-        {"path": os.path.join(laws_dir, "Electronic Commerce Act, 2081 (2025).pdf"), "display_name": "E-Commerce Directive 2082"}
-    ]
-    
-    for doc in docs_to_upload:
-        if os.path.exists(doc["path"]):
-            print(f"Uploading {doc['display_name']}...")
-            try:
-                # Upload the file to Gemini
-                uploaded_file = client.files.upload(
-                    file=doc["path"],
-                    config={'display_name': doc['display_name']}
-                )
-                uploaded_legal_docs.append(uploaded_file)
-                print(f"Successfully uploaded: {uploaded_file.uri}")
-            except Exception as e:
-                print(f"Failed to upload {doc['path']}: {e}")
-        else:
-            print(f"Note: {doc['path']} not found locally. Add the PDF file to test Document Grounding.")
 
-# Run setup (this is a blocking operation usually on startup)
+def _load_cache() -> dict:
+    if os.path.exists(_CACHE_FILE):
+        with open(_CACHE_FILE) as f:
+            return json.load(f)
+    return {}
+
+
+def _save_cache(cache: dict) -> None:
+    with open(_CACHE_FILE, "w") as f:
+        json.dump(cache, f, indent=2)
+
+
+def _is_file_valid(uri: str) -> bool:
+    """Return True if the file URI still exists in Gemini File API."""
+    try:
+        for f in client.files.list():
+            if f.uri == uri:
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def initialize_knowledge_base() -> None:
+    laws_dir = os.path.join(_BASE_DIR, "..", "Nepal Laws")
+    docs = [
+        {
+            "path": os.path.join(laws_dir, "The Consumer Protection Act, 2075 (2018).pdf"),
+            "display_name": "Consumer Protection Act 2075",
+            "key": "consumer_protection_act",
+        },
+        {
+            "path": os.path.join(laws_dir, "Electronic Commerce Act, 2081 (2025).pdf"),
+            "display_name": "E-Commerce Directive 2082",
+            "key": "ecommerce_directive",
+        },
+    ]
+
+    cache = _load_cache()
+    cache_updated = False
+
+    for doc in docs:
+        key = doc["key"]
+
+        # Reuse cached URI if still valid
+        if key in cache and _is_file_valid(cache[key]):
+            print(f"Using cached URI for {doc['display_name']}: {cache[key]}")
+
+            class _CachedFile:
+                def __init__(self, uri: str):
+                    self.uri = uri
+
+            uploaded_legal_docs.append(_CachedFile(cache[key]))
+            continue
+
+        if not os.path.exists(doc["path"]):
+            print(f"PDF not found, skipping: {doc['path']}")
+            continue
+
+        print(f"Uploading {doc['display_name']}...")
+        try:
+            uploaded = client.files.upload(
+                file=doc["path"],
+                config={"display_name": doc["display_name"]},
+            )
+            uploaded_legal_docs.append(uploaded)
+            cache[key] = uploaded.uri
+            cache_updated = True
+            print(f"Uploaded and cached: {uploaded.uri}")
+        except Exception as e:
+            print(f"Upload failed for {doc['path']}: {e}")
+
+    if cache_updated:
+        _save_cache(cache)
+
+
 initialize_knowledge_base()
+
+# ============================================================================
+# SYSTEM INSTRUCTION
 # ============================================================================
 
-# System Instruction with the Consumer Protection context
 SYSTEM_INSTRUCTION = """
-You are "Fraud Check", a real-time, voice-first consumer rights companion app for young people in Nepal.
-Your core goal is to act as a warm, supportive, and interruptible friend who listens to users' problems, 
+You are "Fraud Check", a real-time, voice-first consumer rights companion for young people in Nepal.
+Your goal is to act as a warm, supportive, interruptible friend who listens to problems,
 analyzes them against Nepal's Consumer Protection Act 2075 and E-Commerce Directive 2082, and spots unfair practices.
 
 ### Personality & Tone
-- Warm, empathetic, and Gen Z-friendly. Feel free to be supportive, sassy when appropriate (e.g., against bad actors), and use emojis in your thought process or output if available.
-- Bilingual: Understand and speak contextual English mixed with a bit of Nepali slangs if appropriate, but keep it clear.
-- Be concise and conversational. Since this is a voice agent, do not output massive walls of text. Be interruptible.
+- Warm, empathetic, Gen Z-friendly. Be supportive, a little sassy against bad actors, use emojis freely.
+- Bilingual: Understand and respond in English or Nepali, or a natural mix. Keep it clear.
+- Be concise and conversational — this is a voice agent, avoid long walls of text. Stay interruptible.
 
 ### Legal Context (Nepal)
-- Consumer Protection Act 2075 Section 14: Consumers have the right to get goods/services without harm, the right to information about prices/quality, and the right to compensation against unfair trade.
-- Section 16: Right to return goods if they are defective, substandard, or not as described, typically within 7 days.
-- Section 50-52: Provisions regarding fines and compensation for businesses that charge above MRP, sell expired goods, or engage in false advertising.
-- E-Commerce Directive 2082: E-commerce platforms must have clear grievance handling mechanisms, cannot charge arbitrary hidden fees, and must deliver exactly what was promised online.
+- Consumer Protection Act 2075 Section 14: Right to safe goods/services, right to price/quality info, right to compensation for unfair trade.
+- Section 16: Right to return defective/substandard/misdescribed goods within 7 days.
+- Section 50–52: Fines for selling above MRP, expired goods, or false advertising.
+- E-Commerce Directive 2082: Platforms must have grievance handling mechanisms, no hidden fees, must deliver exactly what was advertised.
 
-### Duties
-1. Listen to the user's problem.
-2. Ask for a photo of the bill, receipt, or product if helpful (you process multimodal input).
-3. Briefly explain which consumer right is violated.
-4. Estimate eligibility or simple next steps.
-5. Offer to generate a pre-filled complaint text for the Department of Commerce, Supplies and Consumer Protection (DCSCP) Google form or Hello Sarkar.
+### Your Duties
+1. Listen carefully to the user's problem.
+2. Ask for a photo of the receipt, bill, or product if it would help (you process multimodal input).
+3. Briefly explain which consumer right is being violated.
+4. Estimate eligibility and suggest simple next steps.
+5. Offer to generate a pre-filled complaint text for DCSCP or Hello Sarkar (call generate_complaint_draft).
+6. If the user wants a visual explainer about their rights, call show_infographic.
 """
 
-# Gemini Live configuration
 MODEL = "gemini-2.0-flash-exp"
 
-import asyncio
+# ============================================================================
+# TOOL DEFINITIONS — using FunctionDeclaration dicts for max SDK compatibility
+# ============================================================================
 
-# --- Tool Definitions ---
-def generate_complaint_draft(issue_summary: str, company_name: str, consumer_name: str) -> str:
-    """Pre-fills a complaint text for the DCSCP or Hello Sarkar based on the user's issue."""
-    draft = f"COMPLAINT TO DCSCP/HELLO SARKAR\n\nI, {consumer_name}, wish to file a formal complaint against {company_name}.\n\nIssue Details:\n{issue_summary}\n\nRequested Resolution: Investigation and appropriate compensation as per Nepal Consumer Protection Act 2075."
-    print("Generated Draft:", draft)
-    return draft
+TOOL_DECLARATIONS = [
+    types.FunctionDeclaration(
+        name="generate_complaint_draft",
+        description=(
+            "Pre-fills a formal complaint text for filing with DCSCP or Hello Sarkar "
+            "based on the consumer's issue. Call this when the user wants to file a complaint."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "issue_summary": {
+                    "type": "string",
+                    "description": "A clear, detailed summary of the consumer issue",
+                },
+                "company_name": {
+                    "type": "string",
+                    "description": "Name of the company or business involved",
+                },
+                "consumer_name": {
+                    "type": "string",
+                    "description": "Name of the consumer filing the complaint",
+                },
+            },
+            "required": ["issue_summary", "company_name", "consumer_name"],
+        },
+    ),
+    types.FunctionDeclaration(
+        name="show_infographic",
+        description=(
+            "Signals the frontend to display a visual explainer card about a consumer rights topic. "
+            "Call this when explaining legal concepts visually would help the user."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "topic": {
+                    "type": "string",
+                    "description": "The consumer rights topic to visualize (e.g. 'return policy', 'price fraud', 'refund rights')",
+                },
+            },
+            "required": ["topic"],
+        },
+    ),
+]
 
-def show_infographic(topic: str) -> dict:
-    """Signals the frontend to show a visual explainer/infographic about a consumer rights topic."""
-    # In a production app, this could call Imagen3 to generate an actual image and return a base64 string or URL.
-    # For MVP, we return a structured action for the frontend to render a neat UI card.
-    print(f"Triggered Infographic for: {topic}")
+
+def _exec_generate_complaint_draft(args: dict) -> str:
+    issue_summary = args.get("issue_summary", "Consumer issue not specified")
+    company_name = args.get("company_name", "Unknown Company")
+    consumer_name = args.get("consumer_name", "Consumer")
+    return (
+        "COMPLAINT TO DCSCP / HELLO SARKAR\n\n"
+        f"I, {consumer_name}, wish to file a formal complaint against {company_name}.\n\n"
+        f"Issue Details:\n{issue_summary}\n\n"
+        "Requested Resolution: Investigation and appropriate compensation as per "
+        "Nepal Consumer Protection Act 2075."
+    )
+
+
+def _exec_show_infographic(args: dict) -> dict:
+    topic = args.get("topic", "consumer rights")
     return {"action": "render_infographic", "topic": topic}
+
+
+def execute_tool(name: str, args: dict):
+    if name == "generate_complaint_draft":
+        return _exec_generate_complaint_draft(args)
+    if name == "show_infographic":
+        return _exec_show_infographic(args)
+    return None
+
+
+# ============================================================================
+# WEBSOCKET ENDPOINT
+# ============================================================================
 
 @app.websocket("/stream")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    
+
     try:
-        # 1. Build the system instruction parts starting with the text prompt
+        # Build system instruction with legal PDFs embedded as context
         instruction_parts = [types.Part.from_text(text=SYSTEM_INSTRUCTION)]
-        
-        # 2. Append any uploaded PDF documents to the system instructions
-        # This gives the agent the actual full legal text as context!
         for doc in uploaded_legal_docs:
-             instruction_parts.append(
-                 types.Part.from_uri(file_uri=doc.uri, mime_type="application/pdf")
-             )
-             
+            instruction_parts.append(
+                types.Part.from_uri(file_uri=doc.uri, mime_type="application/pdf")
+            )
+
         config = types.LiveConnectConfig(
             system_instruction=types.Content(parts=instruction_parts),
-            tools=[generate_complaint_draft, show_infographic],
-            # Use AUDIO for the response modality to enable voice output
-            response_modalities=[types.LiveCommandResponseModality.AUDIO]
+            tools=[types.Tool(function_declarations=TOOL_DECLARATIONS)],
+            response_modalities=["AUDIO"],
         )
-        
+
         async with client.aio.live.connect(model=MODEL, config=config) as session:
-            print("Connected to Gemini Live")
-            
+            print("Gemini Live session started")
+
             async def receive_from_frontend():
                 try:
                     while True:
-                        # For MVP, assuming frontend sends JSON with either audio base64 chunks or image chunks
                         message = await websocket.receive_text()
                         data = json.loads(message)
-                        
+
                         if "audio" in data:
-                            # Send audio chunk to Gemini
-                            await session.send(input={"mime_type": "audio/pcm;rate=16000", "data": data["audio"]})
+                            # Frontend sends raw PCM Int16 at 16kHz as base64
+                            await session.send(
+                                input={"mime_type": "audio/pcm;rate=16000", "data": data["audio"]}
+                            )
                         elif "image" in data:
-                            # Send image/vision frame to Gemini
-                            await session.send(input={"mime_type": "image/jpeg", "data": data["image"]})
+                            # JPEG frame from receipt camera as base64
+                            await session.send(
+                                input={"mime_type": "image/jpeg", "data": data["image"]}
+                            )
                         elif "text" in data:
                             await session.send(input={"text": data["text"]})
                 except WebSocketDisconnect:
-                    print("Frontend Disconnected")
+                    print("Frontend disconnected")
 
             async def receive_from_gemini():
                 try:
                     async for response in session.receive():
-                        # Route audio responses back to the frontend
+                        # --- Audio / text model turn ---
                         if response.server_content and response.server_content.model_turn:
                             for part in response.server_content.model_turn.parts:
-                                if part.executable_code:
-                                    pass # Ignore code exec for MVP
-                                elif part.inline_data:
-                                    # This is an audio chunk
-                                    audio_b64 = part.inline_data.data.decode("utf-8") if isinstance(part.inline_data.data, bytes) else part.inline_data.data
-                                    await websocket.send_text(json.dumps({"type": "audio", "data": audio_b64}))
-                        
+                                if part.inline_data:
+                                    # Gemini outputs raw PCM bytes — base64-encode for JSON
+                                    raw = part.inline_data.data
+                                    audio_b64 = (
+                                        base64.b64encode(raw).decode("utf-8")
+                                        if isinstance(raw, bytes)
+                                        else raw
+                                    )
+                                    await websocket.send_text(
+                                        json.dumps({"type": "audio", "data": audio_b64})
+                                    )
+                                elif part.text:
+                                    # Forward text transcript to frontend for display
+                                    await websocket.send_text(
+                                        json.dumps({"type": "text", "data": part.text})
+                                    )
+
+                        # --- Tool calls ---
                         if response.tool_call:
-                            # The model called a tool. The SDK handles execution if config contains callables.
-                            # We just forward the tool signal to frontend if needed so it can show "Generating Draft..."
                             for call in response.tool_call.function_calls:
-                                await websocket.send_text(json.dumps({"type": "tool_call", "name": call.name}))
+                                call_name = call.name
+                                call_args = dict(call.args) if call.args else {}
+
+                                # 1. Notify frontend a tool is running
+                                await websocket.send_text(
+                                    json.dumps({"type": "tool_call", "name": call_name})
+                                )
+
+                                # 2. Execute the tool locally
+                                result = execute_tool(call_name, call_args)
+
+                                # 3. Push specific results to frontend UI
+                                if call_name == "generate_complaint_draft" and result:
+                                    await websocket.send_text(
+                                        json.dumps({"type": "complaint_draft", "data": result})
+                                    )
+                                elif call_name == "show_infographic" and result:
+                                    await websocket.send_text(
+                                        json.dumps(
+                                            {"type": "infographic", "topic": result.get("topic", "")}
+                                        )
+                                    )
+
+                                # 4. Send tool result back to Gemini so it can continue
+                                tool_response = types.LiveClientToolResponse(
+                                    function_responses=[
+                                        types.FunctionResponse(
+                                            id=call.id,
+                                            name=call_name,
+                                            response={
+                                                "result": (
+                                                    str(result) if result is not None else "done"
+                                                )
+                                            },
+                                        )
+                                    ]
+                                )
+                                await session.send(input=tool_response)
+
                 except Exception as e:
                     print(f"Gemini receive error: {e}")
+                    try:
+                        await websocket.send_text(
+                            json.dumps({"type": "error", "data": str(e)})
+                        )
+                    except Exception:
+                        pass
 
-            # Run both bidirectional streams concurrently
-            await asyncio.gather(
-                receive_from_frontend(),
-                receive_from_gemini()
-            )
-            
+            await asyncio.gather(receive_from_frontend(), receive_from_gemini())
+
     except WebSocketDisconnect:
-        print("Client disconnected")
+        print("Client disconnected before session started")
     except Exception as e:
-        print(f"Error connecting to Gemini: {e}")
+        print(f"Session error: {e}")
         try:
-            await websocket.send_json({"error": str(e)})
-        except:
+            await websocket.send_json({"type": "error", "data": str(e)})
+        except Exception:
             pass
