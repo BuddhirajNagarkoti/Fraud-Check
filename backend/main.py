@@ -8,7 +8,9 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from the backend/ directory regardless of where uvicorn is invoked from
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(dotenv_path=os.path.join(_BASE_DIR, ".env"))
 
 app = FastAPI()
 
@@ -23,7 +25,9 @@ app.add_middleware(
 if not os.environ.get("GEMINI_API_KEY"):
     raise ValueError("GEMINI_API_KEY environment variable not set")
 
-client = genai.Client()
+# The Gemini Live API (bidiGenerateContent) is only available on v1alpha.
+# The upgraded SDK defaults to v1beta, so we pin the version here.
+client = genai.Client(http_options={"api_version": "v1alpha"})
 
 # ============================================================================
 # KNOWLEDGE BASE SETUP WITH URI CACHING
@@ -32,7 +36,6 @@ client = genai.Client()
 # file so we skip re-uploading on every restart. Gemini file URIs expire after
 # 48 hours, so we verify the URI is still alive before using it.
 
-_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 _CACHE_FILE = os.path.join(_BASE_DIR, "pdf_uri_cache.json")
 
 uploaded_legal_docs = []
@@ -145,7 +148,7 @@ analyzes them against Nepal's Consumer Protection Act 2075 and E-Commerce Direct
 6. If the user wants a visual explainer about their rights, call show_infographic.
 """
 
-MODEL = "gemini-2.0-flash-exp"
+MODEL = "gemini-2.5-flash-native-audio-latest"
 
 # ============================================================================
 # TOOL DEFINITIONS — using FunctionDeclaration dicts for max SDK compatibility
@@ -232,15 +235,12 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
     try:
-        # Build system instruction with legal PDFs embedded as context
-        instruction_parts = [types.Part.from_text(text=SYSTEM_INSTRUCTION)]
-        for doc in uploaded_legal_docs:
-            instruction_parts.append(
-                types.Part.from_uri(file_uri=doc.uri, mime_type="application/pdf")
-            )
-
+        # Build system instruction — native audio models only accept text parts here.
+        # The key legal provisions are already embedded in SYSTEM_INSTRUCTION text.
         config = types.LiveConnectConfig(
-            system_instruction=types.Content(parts=instruction_parts),
+            system_instruction=types.Content(
+                parts=[types.Part.from_text(text=SYSTEM_INSTRUCTION)]
+            ),
             tools=[types.Tool(function_declarations=TOOL_DECLARATIONS)],
             response_modalities=["AUDIO"],
         )
