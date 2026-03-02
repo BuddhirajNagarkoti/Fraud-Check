@@ -1,0 +1,15 @@
+Loading local text: Consumer Protection Act 2075...
+Successfully loaded: The Consumer Protection Act, 2075 (2018).txt
+Loading local text: E-Commerce Directive 2082...
+Successfully loaded: Electronic Commerce Act, 2081 (2025).txt
+D:\Developer Buddhiraj\antigravity projects\Fraud Check\backend\test_live.py:22: DeprecationWarning: The `session.send` method is deprecated and will be removed in a future version (not before Q3 2025).
+Please use one of the more specific methods: `send_client_content`, `send_realtime_input`, or `send_tool_response` instead.
+  await session.send(input="", end_of_turn=True)
+D:\Developer Buddhiraj\antigravity projects\Fraud Check\backend\test_live.py:30: DeprecationWarning: The `session.send` method is deprecated and will be removed in a future version (not before Q3 2025).
+Please use one of the more specific methods: `send_client_content`, `send_realtime_input`, or `send_tool_response` instead.
+  await session.send(input={"client_content": {"turn_complete": True}})
+Connected to gemini-2.5-flash-native-audio-latest
+Sending end_of_turn=True...
+Success end_of_turn
+Sending turn_complete json...
+Failed JSON struct: Unsupported input type "<class 'dict'>" or input content "{'client_content': {'turn_complete': True}}"

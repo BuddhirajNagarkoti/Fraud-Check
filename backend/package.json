@@ -1,0 +1,20 @@
+{
+  "name": "fraud-check-backend",
+  "version": "1.0.0",
+  "main": "server.ts",
+  "scripts": {
+    "dev": "tsx --watch server.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "hono": "^4.6.12",
+    "ws": "^8.18.0",
+    "dotenv": "^16.4.5",
+    "@hono/node-server": "^1.13.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "@types/node": "^22.10.1",
+    "@types/ws": "^8.5.13"
+  }
+}
