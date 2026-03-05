@@ -1,4 +1,4 @@
-@echo off
+2@echo off
 TITLE Fraud Check Application Status Output
 echo =======================================================
 echo          FRAUD CHECK PLATFORM DEPLOYMENT

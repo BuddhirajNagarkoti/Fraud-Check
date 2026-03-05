@@ -18,7 +18,7 @@ Preliminary
 to any person residing or staying outside Nepal who provides goods or
 services within Nepal through electronic commerce.
 2.Definitions:Unless the subject or context otherwise requires, in this Act,-
-(a)“Consumer” means a person or institution that consumesor uses
+(a)“Consumer” means a person or institution that consumes or uses
 any goods or services in accordance with this Act.
 (b)“Contract” means the contract referred to in Section 7 of this Act.
 (c)“Buyer” means any person or institution that purchases any goods
@@ -32,11 +32,11 @@ goods and the term shall also include their representative.
 (e)“Inspection Officer” means an inspection officer appointed or
 designated in accordance with the prevailing federal law relating to
 consumer protection.
-(f)“Seller”means a person, firm, company or institution that makes
+(f)“Seller "means a person, firm, company or institution that makes
 goods or services available for sale to the intermediary business
 entity in accordance with this Act and the term also includes a
 business entity engaged in list-based electronic commerce.
-(g)“Intermediary Business Entity”means a person, firm, company or
+(g)“Intermediary Business Entity "means a person, firm, company or
 institution that facilitates the sale of goods or services of a seller to
 a purchaser through an electronic platform.
 (h)“Ministry” means the Ministry of Industry, Commerce and
@@ -65,7 +65,7 @@ not be deemed to constitute electronic commerce.
 Consumer Protection of the Government of Nepal.
 (n)“Business Entity” means an intermediary business entity or a
 business entity engaged in list-based electronic commerce.
-(o)“List-Based Electronic Commerce Business Entity”means a firm,
+(o)“List-Based Electronic Commerce Business Entity "means a firm,
 company or institution that prepares a list of goods or services
 owned by it and sells such listed goods or services directly to
 consumers through an electronic platform.
@@ -229,7 +229,7 @@ have been duly made.
 purchase or sale of goods or services in foreign currency shall be subject to
 the prevailing federal laws.
 9.Delivery of Goods or Services:(1) The business entity shall deliver or
-cause to be delivered the requested goods or servicesto the buyer or buyer’s
+cause to be delivered the requested goods or services to the buyer or buyer’s
 representative at the designated location and on the specific date, time or
 within the period as specified in the contract entered into with the buyer.
 (2) While delivering goods or services pursuant to sub-section (1), if
@@ -529,16 +529,16 @@ as possible.
 (7) Regarding the matter received in writing for action pursuant to
 sub-section (6), the concerned authority shall take action in accordance with
 the prevailing law and inform the department accordingly.
-29.Need for Coordination:While monitoring or inspecting electronic
+29.Need for Coordination: While monitoring or inspecting electronic
 platforms or related arrangements, the Department shall coordinate with the
 designated regulatory authority of the Government of Nepal that regulates
 information technology-related matters in accordance with prevailing law,
 and shall conduct such work with subject matter experts.
-30.Standards to be followed:Any standards prescribed by the Government of
+30.Standards to be followed: Any standards prescribed by the Government of
 Nepal’s information technology regulatory authority for the improvement or
 upgrading of electronic platforms in accordance prevailing law shall be
 followed by concerned business entity.
-31.In accordance with the Consumer Protection Act:Unless otherwise
+31.In accordance with the Consumer Protection Act: Unless otherwise
 mentioned in this Act, matters relating to the quality of goods or services,
 labeling, procedures and grounds for returning sold goods, pricing of goods
 or services, examination, inspection and monitoring procedures, consumer
@@ -581,20 +581,20 @@ information with the reason shall be provided.
 (6) The Business entity shall develop and implement an online
 redressal mechanism for grievance management in accordance with this
 clause.
-34.Deemed to be conducted by the business entity themselves:Any
+34.Deemed to be conducted by the business entity themselves: Any
 electronic commerce conducted by an employee, worker, or representative
 of the business entity on behalf of business entity shall be deemed to have
 been conducted by the business entity itself.
-35.Provision of Discounts, Facilities, or Concessions:The Government of
+35.Provision of Discounts, Facilities, or Concessions: The Government of
 Nepal may, by publishing a notice in the Nepal Gazette, provide necessary
 discounts, facilities, or concessions to micro, small or cottage industries that
 trade in or sell goods or services produced in Nepal through electronic
 platforms in quantities exceeding a threshold determined by the Ministry.
 36.Prosecution of the case in accordance with prevailing law shall not be
-hindered:If any act which is considered to be an offense under this Act is
+hindered: If any act which is considered to be an offense under this Act is
 also considered to be an offense under other prevailing laws, prosecution
 under such other laws shall not be barred by this Act.
-37.Power to Frame Directives:The Ministry may frame necessary directives
+37.Power to Frame Directives: The Ministry may frame necessary directives
 for the effective implementation of this Act.
 38.Assessment as to implementation of the Act:The Ministry shall assess the
 implementation of this Act within five years from its commencement and
