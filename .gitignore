@@ -1,19 +1,25 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
-env/
-.env
-
-# Node/JavaScript
+# Dependencies
 node_modules/
+
+# Build output
 dist/
 dist-ssr/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Vite
 *.local
 
-# macOS
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
 .DS_Store
+Thumbs.db
 
 # IDEs
 .vscode/
@@ -27,9 +33,6 @@ dist-ssr/
 # AI Tools & Context
 .claude/
 *.patch
-
-# Python Environments
-.venv/
 
 # Backups
 backup/
