@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, MicOff, AlertTriangle, ArrowRight, MessageSquareText, Radio, Camera, Send, Mail, CheckCircle, Image, WifiOff, X, Sun, Moon } from 'lucide-react';
+import { Mic, MicOff, Volume2, AlertTriangle, ArrowRight, MessageSquareText, Radio, Camera, Send, Mail, CheckCircle, Image, WifiOff, X, Sun, Moon } from 'lucide-react';
 import useWebSocket from 'react-use-websocket';
 import { useGoogleLogin } from '@react-oauth/google';
 import './index.css';
@@ -281,6 +281,10 @@ function App() {
                     image: base64String,
                     mimeType: file.type
                 }));
+                // Auto-prompt Gemini to analyze the uploaded evidence
+                sendMessage(JSON.stringify({
+                    text: 'I just uploaded a photo as evidence. Please analyze this image and tell me what you see — does it support my complaint?'
+                }));
                 setTranscripts(prev => [...prev, { role: 'user', text: `\u{1F4F8} Uploaded Evidence: ${file.name}`, id: Date.now() }]);
             };
             reader.readAsDataURL(file);
@@ -348,9 +352,11 @@ function App() {
             >
                 <div className={`orb ${orbState}`}>
                     <div className="orb-core">
-                        {isRecording
-                            ? <MicOff size={28} className="orb-icon" />
-                            : <Mic size={28} className="orb-icon" />
+                        {agentSpeaking
+                            ? <Volume2 size={28} className="orb-icon" />
+                            : isRecording
+                                ? <MicOff size={28} className="orb-icon" />
+                                : <Mic size={28} className="orb-icon" />
                         }
                     </div>
                     <div className="orb-ring ring-1" />
