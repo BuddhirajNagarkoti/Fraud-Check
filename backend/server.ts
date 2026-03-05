@@ -14,8 +14,7 @@ dotenv.config();
 const GOOGLE_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
 if (!GOOGLE_API_KEY) {
-  console.error('GEMINI_API_KEY or GOOGLE_API_KEY environment variable not set');
-  process.exit(1);
+  console.warn('[WARNING] GEMINI_API_KEY or GOOGLE_API_KEY not set. Voice features will not work.');
 }
 
 const SYSTEM_INSTRUCTION = `
@@ -285,6 +284,9 @@ async function main() {
   app.use('/*', cors());
 
   const port = parseInt(process.env.PORT || '8002', 10);
+
+  // Health check for Cloud Run
+  app.get('/api/health', (c) => c.json({ status: 'ok' }));
 
   // Add a route to send email via Gmail API
   app.post('/api/send-email', async (c) => {
