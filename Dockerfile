@@ -11,10 +11,10 @@ RUN npm run build
 FROM node:20-slim
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 COPY backend/ .
 COPY --from=frontend-build /app/frontend/dist ../frontend/dist
 
 ENV PORT=8080
 EXPOSE 8080
-CMD ["npx", "tsx", "server.ts"]
+CMD ["node_modules/.bin/tsx", "server.ts"]

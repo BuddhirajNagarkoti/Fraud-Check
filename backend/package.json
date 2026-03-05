@@ -13,12 +13,12 @@
     "google-auth-library": "^10.6.1",
     "googleapis": "^171.4.0",
     "hono": "^4.6.12",
+    "tsx": "^4.19.2",
     "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.13",
     "@types/ws": "^8.5.13",
-    "tsx": "^4.19.2",
     "typescript": "^5.9.3"
   }
 }
