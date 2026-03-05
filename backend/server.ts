@@ -80,67 +80,96 @@ interface ViolationRule {
 
 const VIOLATION_RULES: ViolationRule[] = [
   {
-    pattern: /section\s*14/i,
+    pattern: /section\s*(14|fourteen)/i,
     law: 'Consumer Protection Act 2075',
     section: 'Section 14',
     violation: 'Right to safe goods/services, price info, quality info, and compensation',
     next_step: 'File complaint at DCSCP or Hello Sarkar',
   },
   {
-    pattern: /section\s*16/i,
+    pattern: /section\s*(16|sixteen)/i,
     law: 'Consumer Protection Act 2075',
     section: 'Section 16',
     violation: 'Right to return defective or substandard goods within 7 days',
     next_step: 'Return the product within 7 days for full refund',
   },
   {
-    pattern: /section\s*50/i,
+    pattern: /section\s*(50|fifty)/i,
     law: 'Consumer Protection Act 2075',
     section: 'Section 50-52',
     violation: 'Fines for charging above MRP, selling expired goods, or false advertising',
     next_step: 'Report to DCSCP for penalty enforcement',
   },
   {
-    pattern: /section\s*51/i,
+    pattern: /section\s*(51|fifty[\s-]?one)/i,
     law: 'Consumer Protection Act 2075',
     section: 'Section 50-52',
     violation: 'Fines for charging above MRP, selling expired goods, or false advertising',
     next_step: 'Report to DCSCP for penalty enforcement',
   },
   {
-    pattern: /section\s*52/i,
+    pattern: /section\s*(52|fifty[\s-]?two)/i,
     law: 'Consumer Protection Act 2075',
     section: 'Section 50-52',
     violation: 'Fines for charging above MRP, selling expired goods, or false advertising',
     next_step: 'Report to DCSCP for penalty enforcement',
   },
   {
-    pattern: /e-?commerce\s*(directive|act)\s*2082/i,
+    pattern: /e[\s-]?commerce\s*(directive|act|guideline)?\s*(2082|twenty[\s-]?eighty[\s-]?two)?/i,
     law: 'E-Commerce Directive 2082',
     section: 'Directive 2082',
     violation: 'Violations related to grievance handling, hidden fees, or misleading delivery promises',
     next_step: 'File complaint with DCSCP referencing E-Commerce Directive 2082',
   },
   {
-    pattern: /consumer\s*protection\s*act/i,
+    pattern: /consumer\s*protection\s*(act|law)/i,
     law: 'Consumer Protection Act 2075',
     section: 'CPA 2075',
     violation: 'Consumer rights violation under the Consumer Protection Act',
     next_step: 'File complaint at DCSCP or call Hello Sarkar (1111)',
+  },
+  {
+    pattern: /right\s*to\s*return|return\s*(within|the\s*product)|7[\s-]?day|seven[\s-]?day/i,
+    law: 'Consumer Protection Act 2075',
+    section: 'Section 16',
+    violation: 'Right to return defective or substandard goods within 7 days',
+    next_step: 'Return the product within 7 days for full refund',
+  },
+  {
+    pattern: /above\s*mrp|overcharg|over[\s-]?pric|expired\s*(good|product|item)|false\s*advertis|misleading\s*ad/i,
+    law: 'Consumer Protection Act 2075',
+    section: 'Section 50-52',
+    violation: 'Fines for charging above MRP, selling expired goods, or false advertising',
+    next_step: 'Report to DCSCP for penalty enforcement',
+  },
+  {
+    pattern: /right\s*to\s*(safe|compensation|info|quality)|consumer\s*right/i,
+    law: 'Consumer Protection Act 2075',
+    section: 'Section 14',
+    violation: 'Right to safe goods/services, price info, quality info, and compensation',
+    next_step: 'File complaint at DCSCP or Hello Sarkar',
+  },
+  {
+    pattern: /hidden\s*fee|hidden\s*charge|not\s*as\s*(described|advertised|promised)|grievance\s*handling/i,
+    law: 'E-Commerce Directive 2082',
+    section: 'Directive 2082',
+    violation: 'Violations related to grievance handling, hidden fees, or misleading delivery promises',
+    next_step: 'File complaint with DCSCP referencing E-Commerce Directive 2082',
   },
 ];
 
 // Track which violations have already been sent per session
 function createViolationTracker() {
   const sent = new Set<string>();
-  return (text: string): ViolationRule | null => {
+  return (text: string): ViolationRule[] => {
+    const found: ViolationRule[] = [];
     for (const rule of VIOLATION_RULES) {
       if (rule.pattern.test(text) && !sent.has(rule.section)) {
         sent.add(rule.section);
-        return rule;
+        found.push(rule);
       }
     }
-    return null;
+    return found;
   };
 }
 
@@ -204,8 +233,8 @@ async function createSessionForClient(socket: WebSocket) {
 
           // Accumulate transcript and check for violation mentions
           transcriptBuffer += text;
-          const violation = checkViolation(transcriptBuffer);
-          if (violation) {
+          const violations = checkViolation(transcriptBuffer);
+          for (const violation of violations) {
             console.log(`[VIOLATION] Detected: ${violation.section} - ${violation.law}`);
             socket.send(JSON.stringify({
               type: 'violation',
