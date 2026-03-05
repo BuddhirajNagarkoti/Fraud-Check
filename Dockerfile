@@ -4,8 +4,7 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ .
-ARG VITE_GOOGLE_CLIENT_ID
-ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+ENV VITE_GOOGLE_CLIENT_ID=260267808091-b0en4v9otko7i8u5gnbl3f6k3ar19qk9.apps.googleusercontent.com
 RUN npm run build
 
 # Stage 2: Production backend + serve frontend
