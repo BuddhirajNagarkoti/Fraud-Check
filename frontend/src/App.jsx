@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, MicOff, Volume2, AlertTriangle, ArrowRight, MessageSquareText, Radio, Camera, Send, Mail, CheckCircle, Image, WifiOff, X, Sun, Moon } from 'lucide-react';
+import { Mic, MicOff, Volume2, AlertTriangle, ArrowRight, MessageSquareText, Radio, Camera, Send, Mail, CheckCircle, Image, WifiOff, X, Sun, Moon, Scale, Zap, RotateCcw } from 'lucide-react';
 import useWebSocket from 'react-use-websocket';
 import { useGoogleLogin } from '@react-oauth/google';
 import './index.css';
@@ -8,14 +8,21 @@ function App() {
     const [isConnected, setIsConnected] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [agentSpeaking, setAgentSpeaking] = useState(false);
-    const [transcripts, setTranscripts] = useState([]);
-    const [violations, setViolations] = useState([]);
+    const [transcripts, setTranscripts] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('fraud-check-transcripts')) || []; } catch { return []; }
+    });
+    const [violations, setViolations] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('fraud-check-violations')) || []; } catch { return []; }
+    });
     const [activeTab, setActiveTab] = useState('live');
     const [googleToken, setGoogleToken] = useState(null);
     const [sendingEmailId, setSendingEmailId] = useState(null);
     const [sentEmails, setSentEmails] = useState(new Set());
-    const [lastEvidence, setLastEvidence] = useState(null);
+    const [lastEvidence, setLastEvidence] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('fraud-check-evidence')); } catch { return null; }
+    });
     const [toast, setToast] = useState(null);
+    const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('fraud-check-onboarded'));
     const toastTimeoutRef = useRef(null);
     const wasConnectedRef = useRef(false);
 
@@ -54,6 +61,7 @@ function App() {
     const speakingTimeoutRef = useRef(null);
     const transcriptEndRef = useRef(null);
     const imgInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
 
     const agentSpeakingRef = useRef(false);
     useEffect(() => { agentSpeakingRef.current = agentSpeaking; }, [agentSpeaking]);
@@ -105,6 +113,46 @@ function App() {
             transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
     }, [transcripts, activeTab, isDesktop]);
+
+    // Session persistence
+    useEffect(() => {
+        localStorage.setItem('fraud-check-transcripts', JSON.stringify(transcripts));
+    }, [transcripts]);
+    useEffect(() => {
+        localStorage.setItem('fraud-check-violations', JSON.stringify(violations));
+    }, [violations]);
+    useEffect(() => {
+        if (lastEvidence) localStorage.setItem('fraud-check-evidence', JSON.stringify(lastEvidence));
+    }, [lastEvidence]);
+
+    const handleNewSession = () => {
+        setTranscripts([]);
+        setViolations([]);
+        setLastEvidence(null);
+        setSentEmails(new Set());
+        localStorage.removeItem('fraud-check-transcripts');
+        localStorage.removeItem('fraud-check-violations');
+        localStorage.removeItem('fraud-check-evidence');
+        if (isRecording) stopRecording();
+    };
+
+    const dismissOnboarding = () => {
+        localStorage.setItem('fraud-check-onboarded', '1');
+        setShowOnboarding(false);
+    };
+
+    const scenarios = [
+        'Overcharged for a product',
+        'Defective item received',
+        'Online order not delivered',
+        'Fake or misleading ad',
+    ];
+
+    const handleScenario = (text) => {
+        sendMessage(JSON.stringify({ text }));
+        setTranscripts(prev => [...prev, { role: 'user', text, id: Date.now() }]);
+        startRecording();
+    };
 
     // --- Playback ---
     const playAudio = useCallback(async (base64Audio) => {
@@ -372,13 +420,54 @@ function App() {
                 style={{ display: 'none' }}
                 onChange={handlePhotoUpload}
             />
-            <button
-                className={`upload-btn ${!isConnected ? 'disabled' : ''}`}
-                onClick={() => imgInputRef.current?.click()}
-                disabled={!isConnected}
-            >
-                <Camera size={18} /> Upload Evidence
-            </button>
+            <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                ref={cameraInputRef}
+                style={{ display: 'none' }}
+                onChange={handlePhotoUpload}
+            />
+            <div className="evidence-buttons">
+                <button
+                    className={`upload-btn ${!isConnected ? 'disabled' : ''}`}
+                    onClick={() => imgInputRef.current?.click()}
+                    disabled={!isConnected}
+                >
+                    <Image size={18} /> Upload Evidence
+                </button>
+                <button
+                    className={`upload-btn ${!isConnected ? 'disabled' : ''}`}
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={!isConnected}
+                >
+                    <Camera size={18} /> Take Photo
+                </button>
+            </div>
+
+            {/* Scenario buttons — show when idle and no conversation yet */}
+            {transcripts.length === 0 && !isRecording && (
+                <div className="scenario-buttons">
+                    {scenarios.map(s => (
+                        <button key={s} className="scenario-btn" onClick={() => handleScenario(s)} disabled={!isConnected}>
+                            {s}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Live violation chips */}
+            {violations.length > 0 && (
+                <div className="live-violations">
+                    {violations.map(v => (
+                        <div key={v.id} className="violation-chip">
+                            <AlertTriangle size={14} />
+                            <span className="violation-chip-section">{v.section}</span>
+                            <span className="violation-chip-law">{v.law}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 
@@ -460,6 +549,11 @@ function App() {
                     <h1>Fraud Check</h1>
                 </div>
                 <div className="top-bar-right">
+                    {transcripts.length > 0 && (
+                        <button className="new-session-btn" onClick={handleNewSession}>
+                            <RotateCcw size={14} /> New
+                        </button>
+                    )}
                     <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
                         {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                     </button>
@@ -539,6 +633,31 @@ function App() {
                     {toast.type === 'success' && <CheckCircle size={16} />}
                     <span>{toast.message}</span>
                     <button className="toast-close" onClick={() => setToast(null)}><X size={14} /></button>
+                </div>
+            )}
+
+            {/* Onboarding overlay */}
+            {showOnboarding && (
+                <div className="onboarding-overlay">
+                    <div className="onboarding-card">
+                        <span className="onboarding-shield">{'\u{1F6E1}\uFE0F'}</span>
+                        <h2>Welcome to Fraud Check</h2>
+                        <div className="onboarding-steps">
+                            <div className="onboarding-step">
+                                <div className="onboarding-icon"><Mic size={24} /></div>
+                                <p>Tell us your problem</p>
+                            </div>
+                            <div className="onboarding-step">
+                                <div className="onboarding-icon"><Scale size={24} /></div>
+                                <p>We'll find the law</p>
+                            </div>
+                            <div className="onboarding-step">
+                                <div className="onboarding-icon"><Zap size={24} /></div>
+                                <p>Take action</p>
+                            </div>
+                        </div>
+                        <button className="onboarding-btn" onClick={dismissOnboarding}>Get Started</button>
+                    </div>
                 </div>
             )}
         </div>

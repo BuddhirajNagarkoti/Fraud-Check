@@ -25,13 +25,19 @@ Fraud Check makes consumer protection accessible through **conversation**. Inste
 ## Key Features
 
 ### Voice-First Interaction
-Real-time, low-latency voice conversation using **Gemini 2.5 Flash Native Audio** via the **Gemini Live API**. Users speak naturally; the agent responds conversationally with the Zephyr voice. Supports interruption — users can speak over the agent mid-sentence.
+Real-time, low-latency voice conversation using **Gemini 2.5 Flash Native Audio** via the **Gemini Live API**. Users speak naturally; the agent responds conversationally with the Zephyr voice.
+
+### Natural Interruption Handling
+Users can speak over the agent mid-sentence — just like a real phone call. The agent acknowledges the interruption naturally ("Oh sure, go ahead!", "Yeah?") and either pivots to the user's new topic or smoothly continues where it left off. Powered by Gemini's built-in VAD with contextual interrupt hints.
+
+### Quick Scenario Buttons
+First-time users see pre-built scenario pills — "Overcharged for a product", "Defective item received", "Online order not delivered", "Fake or misleading ad" — that instantly start a conversation with context and auto-activate the microphone.
 
 ### Multimodal Evidence Analysis
-Users upload photos of defective products, expired goods, or receipts. Gemini analyzes the image and cross-references it with the user's verbal claim to verify the issue.
+Users upload photos or take live camera shots of defective products, expired goods, or receipts. Gemini analyzes the image and cross-references it with the user's verbal claim to verify the issue.
 
 ### Real-Time Violation Detection
-As the agent speaks, the app parses the transcript for legal section references and instantly displays **violation cards** with:
+As the agent speaks, the app parses the transcript for legal section references and instantly displays **violation cards** in the transcript and **animated violation chips** on the Live tab with:
 - The exact law and section number
 - A plain-language explanation of the violation
 - Recommended next steps
@@ -50,6 +56,12 @@ When the user is ready, the agent drafts a formal complaint email. The app:
 - Displays it for review
 - Sends it via **Gmail API** with evidence photos attached
 - Requires Google sign-in only at this step
+
+### Session Persistence
+Transcripts, violations, and evidence persist across page refreshes via localStorage. A "New Session" button in the top bar lets users start fresh at any time.
+
+### Onboarding
+First-time visitors see a clean 3-step overlay — "Tell us your problem", "We'll find the law", "Take action" — that introduces the app flow before dismissing permanently.
 
 ### Progressive Web App
 Installable on mobile and desktop. Works in standalone mode with proper app icons and manifest.
@@ -74,7 +86,7 @@ Theme toggle with system preference detection and localStorage persistence.
 | **Input Audio Transcription** | Displayed as user's speech in the transcript |
 | **Prebuilt Voice (Zephyr)** | Natural, Gen-Z-friendly voice for the agent persona |
 | **System Instruction** | Embeds Nepal's Consumer Protection Act 2075 and E-Commerce Directive 2082 as legal context |
-| **Interruption Handling** | Users can speak over the agent; audio playback stops immediately |
+| **Interruption Handling** | Users can speak over the agent; audio stops, context hint injected so agent acknowledges naturally |
 
 ---
 
@@ -89,7 +101,7 @@ Browser (React PWA)
         │
         │ WebSocket (ws:// / wss://)
         ▼
-Node.js Backend (Hono + TypeScript)
+Python Backend (FastAPI + WebSocket)
 ├── Gemini Live API session (per client)
 ├── Transcript-based violation detection (regex)
 ├── Email draft parsing from agent speech
@@ -110,7 +122,7 @@ Google Cloud APIs
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 18, Vite, Web Audio API, AudioWorklet |
-| Backend | Node.js, Hono, TypeScript, WebSocket (ws) |
+| Backend | Python, FastAPI, WebSocket, google-genai SDK |
 | AI | Google Gemini Live API (gemini-2.5-flash-native-audio) |
 | Email | Google Gmail API with OAuth 2.0 |
 | PWA | vite-plugin-pwa, Workbox |
@@ -121,6 +133,7 @@ Google Cloud APIs
 ## Local Development
 
 ### Prerequisites
+- Python 3.10+
 - Node.js 18+
 - Google Gemini API Key
 - Google OAuth Client ID (for Gmail integration)
@@ -130,9 +143,9 @@ Google Cloud APIs
 ```bash
 # Backend
 cd backend
-npm install
+pip install -r requirements.txt
 cp .env.example .env  # Add your GEMINI_API_KEY
-npm run dev
+uvicorn main:app --port 8002
 
 # Frontend (in a separate terminal)
 cd frontend

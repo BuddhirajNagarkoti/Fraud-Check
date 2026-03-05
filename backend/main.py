@@ -77,6 +77,15 @@ analyzes them against Nepal's Consumer Protection Act 2075 and E-Commerce Direct
 - Bilingual: Understand and speak contextual English mixed with a bit of Nepali slangs if appropriate.
 - Be concise and conversational. Since this is a voice agent, do not output massive walls of text. Be interruptible.
 
+### Interruption Handling
+- You are a real-time voice agent. The user CAN and WILL interrupt you mid-sentence — this is normal and expected.
+- When the user interrupts you, STOP your current thought immediately and focus on what they are saying.
+- After hearing their interruption, naturally acknowledge it: e.g. "Oh sure, go ahead!", "Yeah?", "Got it—", "Oh sorry, what were you saying?"
+- If the user's interruption was just a brief acknowledgment (like "hmm", "yeah", "okay"), you can smoothly continue where you left off: "So as I was saying..."
+- If the user asks something new or changes topic, pivot naturally — don't force your previous point.
+- NEVER ignore what the user said during an interruption. NEVER just repeat your previous sentence robotically.
+- Keep responses SHORT (1-2 sentences at a time) so the user has natural pauses to jump in. Think of it like a real phone call with a friend.
+
 ### Legal Context (Nepal)
 - Consumer Protection Act 2075 Section 14: Right to goods/services without harm, right to info about prices/quality, right to compensation.
 - Section 16: Right to return defective/substandard goods within 7 days.
@@ -205,6 +214,17 @@ async def websocket_endpoint(websocket: WebSocket):
                             if sc and getattr(sc, 'interrupted', False):
                                 log("[GEMINI] Interruption detected!")
                                 await websocket.send_text(json.dumps({"type": "interrupt"}))
+                                # Nudge the model to acknowledge the interruption naturally
+                                try:
+                                    await session.send_client_content(
+                                        turns=types.Content(
+                                            role="user",
+                                            parts=[types.Part(text="[The user just interrupted you mid-sentence. Listen to what they say, acknowledge the interruption naturally, and respond to them. Do NOT repeat what you were saying unless they ask you to continue.]")]
+                                        ),
+                                        turn_complete=False,
+                                    )
+                                except Exception as hint_err:
+                                    log(f"[GEMINI] Could not send interrupt hint: {hint_err}")
                                 continue
 
                             if sc and sc.model_turn and sc.model_turn.parts:
