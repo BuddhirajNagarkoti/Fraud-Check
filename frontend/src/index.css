@@ -22,6 +22,23 @@
   --warning: #ffb74a;
 }
 
+/* Light theme */
+[data-theme="light"] {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-2: #eeeef0;
+  --border: #d1d1d6;
+  --text: #1c1c1e;
+  --text-dim: #6e6e73;
+  --accent: #0066cc;
+  --accent-glow: rgba(0, 102, 204, 0.2);
+  --agent-bubble: #e8f0fe;
+  --user-bubble: #f3e8fe;
+  --danger: #d63031;
+  --success: #00a86b;
+  --warning: #e17900;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--bg);
@@ -94,6 +111,104 @@ body {
 .connection-badge.online .dot {
   background: var(--success);
   box-shadow: 0 0 8px rgba(74, 255, 138, 0.5);
+}
+
+/* ===== Top Bar Right ===== */
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== Theme Toggle ===== */
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+/* ===== Light Mode Overrides ===== */
+[data-theme="light"] .orb-core {
+  background: radial-gradient(circle, #bbb 0%, #999 100%);
+}
+
+[data-theme="light"] .orb-icon {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .orb.idle .orb-icon {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .orb.listening .orb-icon,
+[data-theme="light"] .orb.speaking .orb-icon {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="light"] .orb-ring {
+  border-color: rgba(136, 136, 136, 0.25);
+}
+
+[data-theme="light"] .bubble-violations .violation-card {
+  background: rgba(255, 183, 74, 0.08);
+}
+
+[data-theme="light"] .email-draft-card {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .email-body {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .upload-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .upload-btn:hover:not(.disabled) {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .bg-gradient {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(0, 102, 204, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 70%, rgba(168, 85, 247, 0.03) 0%, transparent 50%);
+}
+
+[data-theme="light"] .bg-gradient.listening {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(214, 48, 49, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 70%, rgba(168, 85, 247, 0.03) 0%, transparent 50%);
+}
+
+[data-theme="light"] .transcript-bubble.agent {
+  border-color: rgba(0, 102, 204, 0.15);
+}
+
+[data-theme="light"] .transcript-bubble.user {
+  border-color: rgba(168, 85, 247, 0.15);
+}
+
+[data-theme="light"] .transcript-bubble.user .role {
+  color: #7c3aed;
+}
+
+[data-theme="light"] .connection-badge.online .dot {
+  box-shadow: 0 0 8px rgba(0, 168, 107, 0.5);
 }
 
 /* ===== Tab Bar ===== */
@@ -674,7 +789,275 @@ body {
     radial-gradient(ellipse at 30% 70%, rgba(168, 85, 247, 0.04) 0%, transparent 50%);
 }
 
-/* ===== Responsive ===== */
+/* ===== Upload Button ===== */
+.upload-btn {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.upload-btn:hover:not(.disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.upload-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== Email Draft Cards ===== */
+.email-draft-card {
+  margin-top: 12px;
+  background: rgba(10, 10, 10, 0.6);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.email-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.email-field {
+  font-size: 13px;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.email-field strong {
+  color: var(--text-dim);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.email-body {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 6px;
+  white-space: pre-wrap;
+  font-family: inherit;
+  border-left: 2px solid var(--accent);
+}
+
+.email-attachment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--accent);
+  background: rgba(74, 158, 255, 0.1);
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.send-email-btn {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-email-btn:hover:not(:disabled) {
+  background: #3388ff;
+  transform: translateY(-1px);
+}
+
+.send-email-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.send-email-btn.sent {
+  background: var(--success);
+  color: #000;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== Toast Notifications ===== */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 100;
+  animation: toast-in 0.3s ease-out;
+  max-width: 90%;
+  backdrop-filter: blur(12px);
+}
+
+.toast-error {
+  background: rgba(255, 74, 106, 0.15);
+  border: 1px solid rgba(255, 74, 106, 0.3);
+  color: var(--danger);
+}
+
+.toast-success {
+  background: rgba(74, 255, 138, 0.15);
+  border: 1px solid rgba(74, 255, 138, 0.3);
+  color: var(--success);
+}
+
+.toast-info {
+  background: rgba(74, 158, 255, 0.15);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  color: var(--accent);
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+@keyframes toast-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ===== Desktop: 2-panel layout ===== */
+@media (min-width: 768px) {
+  .tab-bar {
+    display: none;
+  }
+
+  .desktop-panels {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .desktop-panels .panel-live {
+    flex: 0 0 45%;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+  }
+
+  .desktop-panels .panel-live .tab-content {
+    flex: 1;
+  }
+
+  .desktop-panels .panel-transcript {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .desktop-panels .panel-transcript .transcript-area {
+    width: 100%;
+    max-width: none;
+    padding: 16px 24px 32px;
+  }
+
+  .desktop-panels .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .orb {
+    width: 240px;
+    height: 240px;
+  }
+
+  .orb-core {
+    width: 96px;
+    height: 96px;
+  }
+
+  .ring-1 { width: 130px; height: 130px; }
+  .ring-2 { width: 174px; height: 174px; }
+  .ring-3 { width: 220px; height: 220px; }
+}
+
+/* ===== Large desktop ===== */
+@media (min-width: 1200px) {
+  .desktop-panels .panel-live {
+    flex: 0 0 40%;
+  }
+}
+
+/* ===== Small mobile ===== */
 @media (max-width: 480px) {
   .orb {
     width: 180px;
@@ -686,20 +1069,9 @@ body {
     height: 72px;
   }
 
-  .ring-1 {
-    width: 100px;
-    height: 100px;
-  }
-
-  .ring-2 {
-    width: 132px;
-    height: 132px;
-  }
-
-  .ring-3 {
-    width: 168px;
-    height: 168px;
-  }
+  .ring-1 { width: 100px; height: 100px; }
+  .ring-2 { width: 132px; height: 132px; }
+  .ring-3 { width: 168px; height: 168px; }
 
   .violations-panel {
     max-height: 180px;

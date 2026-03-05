@@ -1,0 +1,9 @@
+**/node_modules
+**/.env
+**/dist
+.git
+backup
+claude_diff.patch
+Nepal Laws
+README.md
+start-fraud-check.bat
