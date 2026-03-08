@@ -27,17 +27,20 @@ Fraud Check makes consumer protection accessible through **conversation**. Inste
 ### Voice-First Interaction
 Real-time, low-latency voice conversation using **Gemini 2.5 Flash Native Audio** via the **Gemini Live API**. Users speak naturally; the agent responds conversationally with the Zephyr voice.
 
+### Live Camera Session
+Full "show me anything and let's talk about it" experience. Users start a **Live Session** that activates both camera and microphone together. The camera shows a real-time preview — tap anywhere on the feed to capture a frame with a **ripple animation**, which is instantly sent to Gemini for analysis, displayed in the transcript, and saved as evidence for email complaints. Desktop shows a split view (camera | transcript); mobile adds a dedicated Camera tab.
+
 ### Natural Interruption Handling
 Users can speak over the agent mid-sentence — just like a real phone call. The agent acknowledges the interruption naturally and either pivots to the user's new topic or smoothly continues where it left off. Powered by Gemini's built-in VAD with contextual interrupt hints.
 
 ### Quick Scenario Buttons
-Pre-built scenario cards with icons — "Overcharged for a product", "Defective item received", "Online order not delivered", "Fake or misleading ad" — that instantly start a conversation with context and auto-activate the microphone.
+Pre-built scenario cards — "Overcharged for a product", "Defective item received", "Online order not delivered", "Fake or misleading ad" — that instantly start a conversation with context and auto-activate the microphone.
 
 ### Gradient Mesh Orb
 The central voice orb features a rotating conic-gradient mesh that shifts colors per state — warm reds when listening, cool blues when speaking, subtle breathing when idle — with a soft pulsing glow layer for depth.
 
 ### Multimodal Evidence Analysis
-Users upload photos or take live camera shots of defective products, expired goods, or receipts. Gemini analyzes the image and cross-references it with the user's verbal claim. Evidence thumbnails appear inline in the transcript.
+Users upload photos, take camera shots, or capture frames from the live camera feed. Gemini analyzes the image and cross-references it with the user's verbal claim. Evidence thumbnails appear inline in the transcript. The agent describes only what it can actually see — no hallucinated details.
 
 ### Real-Time Violation Detection
 As the agent speaks, the app parses the transcript for legal section references and instantly displays **collapsible violation cards** in the transcript and **animated violation chips** on the Live tab — showing the exact law, section number, plain-language explanation, and recommended next steps.
@@ -45,20 +48,26 @@ As the agent speaks, the app parses the transcript for legal section references 
 ### Email Complaint Drafting & Sending
 When the user is ready, the agent drafts a formal complaint email. The app displays it for review and sends it via **Gmail API** with evidence photos attached.
 
+### Anti-Hallucination Guardrails
+The agent only cites laws and sections explicitly provided in its legal context. It never fabricates phone numbers, office names, penalties, or legal provisions. Image analysis is grounded in visible evidence only. Low temperature (0.3) keeps responses deterministic and factual. When uncertain, the agent recommends professional legal advice.
+
+### Bilingual Support
+The agent mirrors the user's language — responds in Nepali when the user speaks Nepali, English when they speak English, and can mix both naturally. Legal terms stay in English as official terms.
+
 ### Session Persistence
-Transcripts, violations, and evidence persist across page refreshes. A "New Session" button clears everything and starts fresh.
+Transcripts, violations, and evidence persist across page refreshes via localStorage. A "New Session" button clears everything and starts fresh.
 
 ### Onboarding
-First-time visitors see a polished 3-step overlay with numbered steps — "Tell us your problem", "We'll find the law", "Take action" — with staggered entrance animations.
+First-time visitors see a polished 3-step overlay — "Tell us your problem", "We'll find the law", "Take action" — with staggered entrance animations.
 
 ### Additional Polish
 - **Typing indicator** — animated dots while the agent is speaking
-- **Session summary** — elapsed time, violation count, evidence status (desktop)
 - **Timestamps** on every transcript bubble
 - **Glass morphism top bar** with backdrop blur
 - **Light & Dark mode** with system preference detection
 - **Responsive layout** — tab-based on mobile, side-by-side panels on desktop
 - **Installable PWA** with offline-ready service worker
+- **Auto-reconnect** with exponential backoff on connection loss
 
 ---
 
@@ -68,13 +77,13 @@ First-time visitors see a polished 3-step overlay with numbered steps — "Tell 
 |---------|---------------|
 | **Gemini Live API** | Real-time bidirectional audio streaming via WebSocket — the core of the app |
 | **Native Audio Model** | `gemini-2.5-flash-native-audio-latest` for low-latency voice input/output |
-| **Multimodal Input** | Voice + image analysis (product photos, receipts) in the same session |
+| **Multimodal Input** | Voice + image analysis (product photos, receipts, live camera frames) in the same session |
 | **Output Audio Transcription** | Parsed in real-time to detect legal violations and email drafts |
 | **Input Audio Transcription** | Displayed as user's speech in the transcript |
 | **Prebuilt Voice (Zephyr)** | Natural, Gen-Z-friendly voice for the agent persona |
-| **System Instruction** | Embeds Nepal's Consumer Protection Act 2075 and E-Commerce Directive 2082 as legal context |
+| **System Instruction** | Embeds Nepal's Consumer Protection Act 2075 and E-Commerce Directive 2082 with anti-hallucination guardrails |
+| **Low Temperature (0.3)** | Reduces hallucinations, keeps legal advice grounded and deterministic |
 | **Interruption Handling** | Context hint injected on interrupt so agent acknowledges naturally |
-| **Deferred Connection** | Gemini session opens only on user interaction — zero idle cost |
 
 ---
 
@@ -83,13 +92,15 @@ First-time visitors see a polished 3-step overlay with numbered steps — "Tell 
 ```
 Browser (React PWA)
 ├── Web Audio API + AudioWorklet (16kHz PCM capture)
-├── Deferred WebSocket (connects only on user action)
+├── getUserMedia (camera + mic for Live Session)
+├── Canvas API (tap-to-capture frame extraction)
+├── WebSocket (real-time audio/image/text transport)
 ├── Google OAuth (Gmail send scope)
-└── UI: Gradient mesh orb, transcript, violation cards, email drafts
+└── UI: Gradient mesh orb, live camera, transcript, violation cards, email drafts
         │
         │ WebSocket (ws:// / wss://)
         ▼
-Python Backend (FastAPI + WebSocket)
+Node.js Backend (Hono + TypeScript)
 ├── Gemini Live API session (per client)
 ├── Transcript-based violation detection (regex)
 ├── Email draft parsing from agent speech
@@ -109,8 +120,8 @@ Google Cloud APIs
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, Vite 7, Web Audio API, AudioWorklet |
-| Backend | Python, FastAPI, WebSocket, google-genai SDK |
+| Frontend | React 18, Vite 7, Web Audio API, AudioWorklet, Canvas API |
+| Backend | Node.js, Hono, TypeScript, WebSocket, @google/genai SDK |
 | AI | Google Gemini Live API (gemini-2.5-flash-native-audio) |
 | Email | Google Gmail API with OAuth 2.0 |
 | PWA | vite-plugin-pwa, Workbox |
@@ -122,9 +133,11 @@ Google Cloud APIs
 
 The app is grounded in two key Nepali laws:
 
-- **Consumer Protection Act 2075 (2018)** — Right to safe goods, price transparency, compensation, 7-day return window for defective goods, penalties for overcharging and false advertising
+- **Consumer Protection Act 2075 (2018)** — Right to safe goods, price transparency, compensation, 7-day return window for defective goods, penalties for overcharging and false advertising (Sections 14, 16, 50-52)
 
 - **E-Commerce Directive 2082 (2025)** — Clear grievance handling, no hidden fees, deliver exactly what was promised
+
+The agent only references these specific legal provisions and explicitly defers to professional legal advice for situations outside its knowledge.
 
 ---
 

@@ -1934,7 +1934,6 @@ body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
-    margin-top: 0.5rem;
 }
 
 .live-session-btn:hover:not(.disabled) {

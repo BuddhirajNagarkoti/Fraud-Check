@@ -643,6 +643,9 @@ function App() {
                 <button className={`upload-btn ${!isConnected ? 'disabled' : ''}`} onClick={() => cameraInputRef.current?.click()} disabled={!isConnected}>
                     <Camera size={16} /> Take Photo
                 </button>
+                <button className={`live-session-btn ${!isConnected ? 'disabled' : ''}`} onClick={toggleLiveSession} disabled={!isConnected}>
+                    <Video size={16} /> Live Session
+                </button>
             </div>
 
             {/* Scenario buttons — show when idle and no conversation yet */}
@@ -657,14 +660,6 @@ function App() {
                     ))}
                 </div>
             )}
-
-            <button
-                className={`live-session-btn ${!isConnected ? 'disabled' : ''}`}
-                onClick={toggleLiveSession}
-                disabled={!isConnected}
-            >
-                <Video size={16} /> Live Session
-            </button>
 
             {/* Live violation chips */}
             {violations.length > 0 && (
