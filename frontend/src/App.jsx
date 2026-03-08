@@ -70,6 +70,7 @@ function App() {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const cameraStreamRef = useRef(null);
+    const frameIntervalRef = useRef(null);
 
     const agentSpeakingRef = useRef(false);
     const prevAgentSpeakingRef = useRef(false);
@@ -151,6 +152,9 @@ function App() {
     // Cleanup camera on unmount
     useEffect(() => {
         return () => {
+            if (frameIntervalRef.current) {
+                clearInterval(frameIntervalRef.current);
+            }
             if (cameraStreamRef.current) {
                 cameraStreamRef.current.getTracks().forEach(t => t.stop());
             }
@@ -416,14 +420,27 @@ function App() {
                 micCtx.close();
             };
 
-            // Set state FIRST so camera area renders, then useEffect attaches stream to video
+            // Continuous frame streaming (~1 fps) so Gemini can see in real-time
+            const streamCanvas = document.createElement('canvas');
+            frameIntervalRef.current = setInterval(() => {
+                if (videoRef.current && videoRef.current.videoWidth > 0 && readyState === 1) {
+                    streamCanvas.width = 640;
+                    streamCanvas.height = 480;
+                    const ctx = streamCanvas.getContext('2d');
+                    ctx.drawImage(videoRef.current, 0, 0, 640, 480);
+                    const base64 = streamCanvas.toDataURL('image/jpeg', 0.4).split(',')[1];
+                    sendMessage(JSON.stringify({ image: base64, mimeType: 'image/jpeg' }));
+                }
+            }, 1000);
+
+            // Set state FIRST so camera area renders, then callback ref attaches stream to video
             setIsRecording(true);
             setIsLiveSession(true);
             setIsCameraReady(true);
             if (!hasStartedConversation) {
                 setHasStartedConversation(true);
                 sendMessage(JSON.stringify({
-                    text: 'The user just started a live session with their camera. Greet them briefly. Do NOT describe or comment on any image — no image has been sent yet. The user will tap the screen to send you a photo when they are ready.'
+                    text: 'The user just started a live camera session. You can now see what their camera sees — frames are streamed to you continuously. Greet them briefly and let them know you can see through their camera. Keep it to 1-2 sentences.'
                 }));
             }
         } catch (err) {
@@ -439,6 +456,10 @@ function App() {
     };
 
     const stopLiveSession = () => {
+        if (frameIntervalRef.current) {
+            clearInterval(frameIntervalRef.current);
+            frameIntervalRef.current = null;
+        }
         if (micCleanupRef.current) {
             micCleanupRef.current();
             micCleanupRef.current = null;
