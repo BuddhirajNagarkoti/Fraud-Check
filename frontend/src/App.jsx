@@ -123,6 +123,14 @@ function App() {
         wasConnectedRef.current = connected;
     }, [readyState, showToast]);
 
+    // Attach camera stream to video element after it mounts
+    useEffect(() => {
+        if (isLiveSession && cameraStreamRef.current && videoRef.current) {
+            videoRef.current.srcObject = cameraStreamRef.current;
+            videoRef.current.play().catch(() => {});
+        }
+    }, [isLiveSession, isCameraReady]);
+
     // Auto-switch to camera tab on mobile when live session starts
     useEffect(() => {
         if (isLiveSession && !isDesktop) {
@@ -381,12 +389,8 @@ function App() {
                 audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
             });
 
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                videoRef.current.play();
-            }
+            // Store stream first — video element will attach it via useEffect after render
             cameraStreamRef.current = stream;
-            setIsCameraReady(true);
 
             const micCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
             await micCtx.audioWorklet.addModule('/mic-processor.js');
@@ -411,12 +415,14 @@ function App() {
                 micCtx.close();
             };
 
+            // Set state FIRST so camera area renders, then useEffect attaches stream to video
             setIsRecording(true);
             setIsLiveSession(true);
+            setIsCameraReady(true);
             if (!hasStartedConversation) {
                 setHasStartedConversation(true);
                 sendMessage(JSON.stringify({
-                    text: 'The user just started a live session with their camera. Greet them warmly and let them know they can show you anything — receipts, products, packaging — and you\'ll help analyze it for their complaint. Keep it short, 1-2 sentences.'
+                    text: 'The user just started a live session with their camera. Greet them briefly. Do NOT describe or comment on any image — no image has been sent yet. The user will tap the screen to send you a photo when they are ready.'
                 }));
             }
         } catch (err) {
