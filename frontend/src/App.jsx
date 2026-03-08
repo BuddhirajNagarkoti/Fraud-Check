@@ -576,14 +576,23 @@ function App() {
                     attachment: lastEvidence
                 })
             });
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error('[EMAIL] Server error:', res.status, errorText);
+                showToast(`Failed to send (${res.status}): ${errorText}`, 'error');
+                setSendingEmailId(null);
+                return;
+            }
             const data = await res.json();
             if (data.success) {
                 setSentEmails(prev => new Set(prev).add(id));
                 showToast('Email sent successfully!', 'success', 4000);
             } else {
+                console.error('[EMAIL] API error:', data.error);
                 showToast('Failed to send: ' + (data.error || 'Unknown error'), 'error');
             }
         } catch (e) {
+            console.error('[EMAIL] Network error:', e);
             showToast('Network error sending email. Please try again.', 'error');
         }
         setSendingEmailId(null);
