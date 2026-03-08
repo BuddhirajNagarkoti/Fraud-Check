@@ -706,6 +706,12 @@ function App() {
 
     const renderCameraArea = () => (
         <div className="camera-area">
+            {latestTranscript && (
+                <div className={`live-subtitle ${latestTranscript.role} ${!subtitleVisible ? 'hidden' : ''}`}>
+                    <span className="subtitle-role">{latestTranscript.role === 'agent' ? 'Fraud Check' : 'You'}</span>
+                    <p className="subtitle-text">{latestTranscript.text}</p>
+                </div>
+            )}
             <div className="camera-feed-container" onClick={captureFrame}>
                 <video
                     ref={videoCallbackRef}
@@ -720,6 +726,10 @@ function App() {
                         <p>Starting camera...</p>
                     </div>
                 )}
+                <div className="camera-live-badge">
+                    <span className="live-dot" />
+                    <span>LIVE</span>
+                </div>
                 <div className="camera-tap-hint">
                     <span>Tap to capture</span>
                 </div>

@@ -1,64 +1,103 @@
-Fraud Check - Video Demo Script (The "Torn Shoe" Story)
+FRAUD CHECK — Demo Script (~3:30 minutes)
+============================================
 
-Total Time: ~2.5 to 3 minutes
+OPENING (0:00 - 0:15)
+----------------------
+[Show the app landing screen on mobile]
 
----
+"Fraud Check is a voice-first consumer rights assistant for Nepal, powered by
+Google Gemini Live. It helps everyday consumers identify fraud, understand their
+legal rights, and take action — all through natural conversation and their phone
+camera."
 
-PART 1: The Hook & UI Showcase (0:00 - 0:30)
 
-[Visuals: Screen recording starts. The Fraud Check app is open. Toggle Light/Dark mode once. Move the mouse to show the glass-morphism top bar. The central Gradient Mesh Orb is breathing slowly in its idle state.]
+SCENE 1: Voice Conversation (0:15 - 0:50)
+------------------------------------------
+[Tap the mic orb to start a voice session]
 
-You say (Voiceover to camera): 
-"Hi, I'm Buddhiraj, and this is Fraud Check—a real-time, voice-first consumer rights companion for Nepal. Built for the Gemini Live API Developer Challenge, it solves a huge problem: young consumers face e-commerce fraud every day, but legal jargon and formal complaints are too intimidating. Instead of reading laws, they can just talk to our AI agent naturally."
+YOU SAY: "I bought a packet of chips from a local shop and the shopkeeper
+charged me 50 rupees more than the MRP printed on the packet. Is that legal?"
 
----
+[Let Gemini respond with Consumer Protection Act citation]
 
-PART 2: Core Interaction (The Torn Shoe Story) (0:30 - 1:00)
+YOU SAY: "What can I do about it?"
 
-[Visuals: Click the "Defective item received" Quick Scenario button. The orb shifts to warm red ("listening").]
+[Let Gemini explain complaint filing process]
 
-You say (Speaking to the agent):
-"Hi... so I'm really frustrated. I ordered a pair of Nike sneakers from an Instagram page called 'KTM Kicks'. I paid 5,000 Rupees in advance via eSewa. They arrived yesterday, but when I opened the box, the sole was completely torn off. I messaged them to return it, and they just replied 'No refunds on sale items' and blocked me."
 
-[What happens: The orb shifts to cool blue ("speaking"). The typing indicator shows. The agent starts explaining that under the Consumer Protection Act 2075, businesses cannot refuse returns for defective goods, regardless of their 'no refund' policy.]
+SCENE 2: Live Camera — Overpriced Receipt (0:50 - 1:40)
+--------------------------------------------------------
+[Prepare a fake receipt: MRP Rs. 150, Charged Rs. 220]
+[Tap "Live Session" button to open camera + voice]
 
----
+YOU SAY: "I have the receipt here, can you look at it?"
 
-PART 3: The Interruption & Multimodal Analysis (1:00 - 1:45)
+[Hold receipt to camera]
+[Let Gemini read and identify the overcharge]
 
-[Action: CRITICALLY IMPORTANT! While the agent is mid-sentence, speak over it to interrupt.]
+YOU SAY: "Is this a violation?"
 
-You say (Interrupting the agent):
-"Wait, hang on a second! I actually have a picture of the shoes right here. Let me show you."
+[Let Gemini confirm and cite the law]
+[Tap the camera feed to capture as evidence]
 
-[What happens: The agent should instantly stop speaking (demonstrating the VAD and low-latency interruption). The orb shifts temporarily back to red/listening, then back to blue as it acknowledges your upload.]
 
-[Visuals: Click the upload/camera button and select a pre-saved photo of a torn shoe (`torn_shoe.jpg`).]
+SCENE 3: Live Camera — Expired Product (1:40 - 2:30)
+-----------------------------------------------------
+[Prepare a product with a handwritten label showing expiry: 2025-12-01]
 
-You say (Voiceover to camera, while uploading):
-"Notice how the agent handles the interruption instantly. Now, I'm uploading a photo of the torn shoe. Using Gemini 2.5 Flash Native Audio's multimodal capabilities, it's analyzing the image while staying in the same voice session."
+YOU SAY: "Now look at this product I bought yesterday"
 
-[What happens: The agent responds, acknowledging that it sees the torn sole in the picture and validates your claim. Simultaneously, point your mouse to the "Real-Time Violation Detection" cards that automatically pop up on the screen (e.g., highlighting the 7-day return window law).]
+[Hold the label to camera]
+[Let Gemini read the expiry date and flag it]
 
----
+YOU SAY: "Where do I report this?"
 
-PART 4: Taking Action & Email Drafting (1:45 - 2:30)
+[Let Gemini provide complaint guidance]
+[Tap to capture evidence]
 
-You say (Speaking to the agent):
-"Okay, this is definitely illegal. I want to file a formal complaint with the Department of Commerce against KTM Kicks. Can you draft an email for me and include this photo as evidence?"
 
-[What happens: The agent confirms. On the screen, the UI updates to show a beautifully formatted, formal email draft addressed to the authorities, referencing the specific legal sections (Act 2075) and mentioning the attached evidence.]
+SCENE 4: Nepali Language (2:30 - 3:00)
+---------------------------------------
+[Still in live session or start new voice session]
 
-You say (Voiceover to camera):
-"Fraud Check doesn't just give advice; it empowers action. As you can see, the agent drafted a professional complaint. Using the Gmail API integration, it attaches my photo and the transcript context, and I can send it with one click."
+YOU SAY (in Nepali): "Maile euta saman kine tara tyo kharab niskiyo, ma ke
+garna sakchu?"
+(Translation: I bought a product but it turned out defective, what can I do?)
 
-[Visuals: Click the "Send Email" button. A success toast/notification appears.]
+[Let Gemini respond in Nepali]
+[Shows multilingual capability]
 
----
 
-PART 5: Technical Wrap-up (2:30 - 3:00)
+CLOSING (3:00 - 3:30)
+----------------------
+[Show the evidence panel with captured photos]
+[Show the violations detected sidebar]
 
-[Visuals: Refresh the page to demonstrate session persistence. The transcript, violation cards, and evidence are still there.]
+"Fraud Check combines real-time voice, live camera analysis, and Nepal's
+consumer protection laws into one accessible tool. It's built with Gemini Live
+API, deployed on Google Cloud Run, and works as a PWA on any phone. Thank you."
 
-You say (Voiceover to camera):
-"Under the hood, this uses Web Audio API streaming to a Python FastAPI backend, connecting to the Gemini Live API with zero-idle cost routing. With a dynamic UI featuring state-driven gradient meshes, real-time multimodal data extraction, and seamless Gen-Z-friendly voice interactions—Consumer Law is finally accessible. Thank you for watching."
+
+PROPS TO PREPARE
+================
+1. Fake Receipt
+   - Item: Chips
+   - MRP: Rs. 150
+   - Amount Charged: Rs. 220
+   - Add a shop name and date
+   - Handwrite it on paper (looks more authentic)
+
+2. Expired Product Label
+   - Product name (anything)
+   - Mfg Date: 2025-06-01
+   - Exp Date: 2025-12-01
+   - Add a batch number
+   - Handwrite on paper or stick on a product
+
+
+TIPS
+====
+- Practice once before recording so you know Gemini's response timing
+- Keep your voice natural, not scripted-sounding
+- If Gemini says something unexpected, roll with it — judges like authentic demos
+- Record on your phone with screen recording (not a separate camera filming screen)
