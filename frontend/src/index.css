@@ -1814,7 +1814,9 @@ body {
   }
 
   .evidence-buttons {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
   }
 
@@ -1924,14 +1926,15 @@ body {
 .live-session-btn {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.2rem;
-    border-radius: 12px;
-    border: 1.5px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 0.85rem;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-dim);
+    font-size: 12px;
     font-weight: 500;
+    font-family: inherit;
     cursor: pointer;
     transition: all 0.2s;
 }
