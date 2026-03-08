@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, MicOff, Volume2, AlertTriangle, ArrowRight, MessageSquareText, Radio, Camera, Send, Mail, CheckCircle, Image, WifiOff, X, Sun, Moon, Scale, Zap, RotateCcw, ChevronDown, ChevronUp, Clock, Video } from 'lucide-react';
 import useWebSocket from 'react-use-websocket';
-import { useGoogleLogin } from '@react-oauth/google';
 import './index.css';
 
 function App() {
@@ -550,14 +549,59 @@ function App() {
         }
     };
 
-    const login = useGoogleLogin({
-        onSuccess: (codeResponse) => setGoogleToken(codeResponse.access_token),
-        scope: 'https://www.googleapis.com/auth/gmail.send',
-    });
+    // Check for Google OAuth redirect response on mount
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash.includes('access_token')) {
+            const params = new URLSearchParams(hash.substring(1));
+            const token = params.get('access_token');
+            if (token) {
+                setGoogleToken(token);
+                window.history.replaceState(null, '', window.location.pathname);
+
+                // Auto-send pending email after redirect
+                const pending = localStorage.getItem('fraud-check-pending-email');
+                if (pending) {
+                    localStorage.removeItem('fraud-check-pending-email');
+                    const { draft, id } = JSON.parse(pending);
+                    setTimeout(async () => {
+                        setSendingEmailId(id);
+                        try {
+                            const res = await fetch(`${apiBase}/api/send-email`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                body: JSON.stringify({ to: draft.to, subject: draft.subject, message: draft.raw, attachment: null })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                                setSentEmails(prev => new Set(prev).add(id));
+                                showToast('Email sent successfully!', 'success', 4000);
+                            } else {
+                                showToast('Failed to send: ' + (data.error || 'Unknown error'), 'error');
+                            }
+                        } catch (e) {
+                            showToast('Network error sending email.', 'error');
+                        }
+                        setSendingEmailId(null);
+                    }, 500);
+                }
+            }
+        }
+    }, []);
+
+    const loginWithRedirect = () => {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+        const redirectUri = window.location.origin;
+        const scope = 'https://www.googleapis.com/auth/gmail.send';
+        const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}&prompt=consent`;
+        window.location.href = url;
+    };
 
     const triggerSendEmail = async (draft, id) => {
         if (!googleToken) {
-            login();
+            // Save draft info so we can resume after redirect
+            localStorage.setItem('fraud-check-pending-email', JSON.stringify({ draft, id }));
+            loginWithRedirect();
             return;
         }
 
