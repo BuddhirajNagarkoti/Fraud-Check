@@ -336,6 +336,12 @@ async function main() {
   const app = new Hono();
   app.use('/*', cors());
 
+  // Allow Google OAuth popup to communicate back to the app
+  app.use('/*', async (c, next) => {
+    await next();
+    c.header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  });
+
   const port = parseInt(process.env.PORT || '8002', 10);
 
   // Health check for Cloud Run
