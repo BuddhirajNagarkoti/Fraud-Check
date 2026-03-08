@@ -123,11 +123,12 @@ function App() {
         wasConnectedRef.current = connected;
     }, [readyState, showToast]);
 
-    // Attach camera stream to video element after it mounts
-    useEffect(() => {
-        if (isLiveSession && cameraStreamRef.current && videoRef.current) {
-            videoRef.current.srcObject = cameraStreamRef.current;
-            videoRef.current.play().catch(() => {});
+    // Callback ref: attaches camera stream the instant <video> mounts in DOM
+    const videoCallbackRef = useCallback((node) => {
+        videoRef.current = node;
+        if (node && cameraStreamRef.current) {
+            node.srcObject = cameraStreamRef.current;
+            node.play().catch(() => {});
         }
     }, [isLiveSession, isCameraReady]);
 
@@ -686,7 +687,7 @@ function App() {
         <div className="camera-area">
             <div className="camera-feed-container" onClick={captureFrame}>
                 <video
-                    ref={videoRef}
+                    ref={videoCallbackRef}
                     autoPlay
                     playsInline
                     muted

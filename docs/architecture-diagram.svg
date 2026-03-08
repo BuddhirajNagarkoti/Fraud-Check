@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 720" font-family="Segoe UI, system-ui, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="10" markerHeight="7" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+    <linearGradient id="blueGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="amberGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#ef4444"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="720" rx="16" fill="#fafbfc"/>
+
+  <!-- Title -->
+  <text x="550" y="42" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Fraud Check — Architecture</text>
+  <text x="550" y="62" text-anchor="middle" font-size="12" fill="#94a3b8" letter-spacing="0.1em" font-weight="500">REAL-TIME VOICE + VISION CONSUMER RIGHTS AGENT</text>
+
+  <!-- ====== TIER LABELS ====== -->
+  <text x="22" y="175" font-size="10" fill="#94a3b8" font-weight="600" letter-spacing="0.12em" transform="rotate(-90 22 175)">CLIENT</text>
+  <text x="22" y="420" font-size="10" fill="#94a3b8" font-weight="600" letter-spacing="0.12em" transform="rotate(-90 22 420)">SERVER</text>
+  <text x="22" y="625" font-size="10" fill="#94a3b8" font-weight="600" letter-spacing="0.12em" transform="rotate(-90 22 625)">CLOUD</text>
+
+  <!-- ====== CLIENT TIER ====== -->
+  <!-- Blue top accent line -->
+  <rect x="50" y="85" width="1000" height="3" rx="2" fill="url(#blueGrad)" opacity="0.7"/>
+
+  <!-- React PWA Box -->
+  <rect x="50" y="95" width="310" height="175" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1.2" filter="url(#shadow)"/>
+  <circle cx="74" cy="119" r="14" fill="#eff6ff"/>
+  <text x="74" y="123" text-anchor="middle" font-size="14">&#x1F310;</text>
+  <text x="96" y="123" font-size="14" font-weight="600" fill="#1e293b">React PWA</text>
+  <text x="66" y="148" font-size="11" fill="#64748b">&#8226; Voice orb with gradient mesh</text>
+  <text x="66" y="166" font-size="11" fill="#64748b">&#8226; Live camera + tap-to-capture</text>
+  <text x="66" y="184" font-size="11" fill="#64748b">&#8226; Real-time transcript &amp; violations</text>
+  <text x="66" y="202" font-size="11" fill="#64748b">&#8226; Email draft review &amp; send</text>
+  <text x="66" y="220" font-size="11" fill="#64748b">&#8226; Light/dark mode, responsive PWA</text>
+  <rect x="66" y="235" width="52" height="20" rx="4" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.8"/>
+  <text x="92" y="249" text-anchor="middle" font-size="9" fill="#3b82f6" font-weight="500">React 18</text>
+  <rect x="124" y="235" width="40" height="20" rx="4" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.8"/>
+  <text x="144" y="249" text-anchor="middle" font-size="9" fill="#3b82f6" font-weight="500">Vite 7</text>
+  <rect x="170" y="235" width="34" height="20" rx="4" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.8"/>
+  <text x="187" y="249" text-anchor="middle" font-size="9" fill="#3b82f6" font-weight="500">PWA</text>
+
+  <!-- Audio Capture Box -->
+  <rect x="395" y="95" width="310" height="175" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1.2" filter="url(#shadow)"/>
+  <circle cx="419" cy="119" r="14" fill="#eff6ff"/>
+  <text x="419" y="123" text-anchor="middle" font-size="14">&#x1F3A4;</text>
+  <text x="441" y="123" font-size="14" font-weight="600" fill="#1e293b">Audio Capture</text>
+  <text x="411" y="148" font-size="11" fill="#64748b">&#8226; Web Audio API @ 16kHz</text>
+  <text x="411" y="166" font-size="11" fill="#64748b">&#8226; AudioWorklet (mic-processor.js)</text>
+  <text x="411" y="184" font-size="11" fill="#64748b">&#8226; Float32 &#x2192; PCM 16-bit encoding</text>
+  <text x="411" y="202" font-size="11" fill="#64748b">&#8226; Echo cancellation + noise suppression</text>
+  <text x="411" y="220" font-size="11" fill="#64748b">&#8226; VAD (voice activity detection)</text>
+  <rect x="411" y="235" width="72" height="20" rx="4" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.8"/>
+  <text x="447" y="249" text-anchor="middle" font-size="9" fill="#3b82f6" font-weight="500">AudioWorklet</text>
+  <rect x="489" y="235" width="58" height="20" rx="4" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.8"/>
+  <text x="518" y="249" text-anchor="middle" font-size="9" fill="#3b82f6" font-weight="500">PCM 16-bit</text>
+
+  <!-- Camera + Evidence Box -->
+  <rect x="740" y="95" width="310" height="175" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1.2" filter="url(#shadow)"/>
+  <circle cx="764" cy="119" r="14" fill="#eff6ff"/>
+  <text x="764" y="123" text-anchor="middle" font-size="14">&#x1F4F7;</text>
+  <text x="786" y="123" font-size="14" font-weight="600" fill="#1e293b">Camera + Evidence</text>
+  <text x="756" y="148" font-size="11" fill="#64748b">&#8226; getUserMedia (rear camera)</text>
+  <text x="756" y="166" font-size="11" fill="#64748b">&#8226; Canvas frame capture (JPEG)</text>
+  <text x="756" y="184" font-size="11" fill="#64748b">&#8226; Ripple animation on tap</text>
+  <text x="756" y="202" font-size="11" fill="#64748b">&#8226; Auto-save to localStorage</text>
+  <text x="756" y="220" font-size="11" fill="#64748b">&#8226; Base64 MIME email attachment</text>
+  <rect x="756" y="235" width="62" height="20" rx="4" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.8"/>
+  <text x="787" y="249" text-anchor="middle" font-size="9" fill="#3b82f6" font-weight="500">Canvas API</text>
+  <rect x="824" y="235" width="80" height="20" rx="4" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.8"/>
+  <text x="864" y="249" text-anchor="middle" font-size="9" fill="#3b82f6" font-weight="500">getUserMedia</text>
+
+  <!-- ====== CONNECTOR: Client → Server ====== -->
+  <line x1="550" y1="278" x2="550" y2="348" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+  <rect x="370" y="296" width="360" height="24" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="550" y="312" text-anchor="middle" font-size="10" fill="#3b82f6" font-weight="500" font-family="monospace">WebSocket — audio / image / text / transcript / violations</text>
+
+  <!-- ====== SERVER TIER ====== -->
+  <rect x="50" y="340" width="3" height="0" rx="2" fill="url(#amberGrad)" opacity="0"/>
+  <rect x="50" y="348" width="1000" height="3" rx="2" fill="url(#amberGrad)" opacity="0.7"/>
+
+  <!-- Node.js Backend Box -->
+  <rect x="50" y="358" width="650" height="160" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1.2" filter="url(#shadow)"/>
+  <circle cx="74" cy="382" r="14" fill="#fffbeb"/>
+  <text x="74" y="386" text-anchor="middle" font-size="14">&#x2699;&#xFE0F;</text>
+  <text x="96" y="386" font-size="14" font-weight="600" fill="#1e293b">Node.js Backend (Hono + TypeScript)</text>
+
+  <!-- 2x2 grid inside backend -->
+  <rect x="66" y="404" width="300" height="36" rx="6" fill="#fefce8" stroke="#fef08a" stroke-width="0.8"/>
+  <text x="78" y="418" font-size="9" fill="#a16207" font-weight="600" letter-spacing="0.05em">SESSION MGMT</text>
+  <text x="78" y="432" font-size="10.5" fill="#1e293b" font-weight="500">1 Gemini Live session per WebSocket client</text>
+
+  <rect x="374" y="404" width="310" height="36" rx="6" fill="#fefce8" stroke="#fef08a" stroke-width="0.8"/>
+  <text x="386" y="418" font-size="9" fill="#a16207" font-weight="600" letter-spacing="0.05em">VIOLATION DETECTION</text>
+  <text x="386" y="432" font-size="10.5" fill="#1e293b" font-weight="500">Regex-based transcript parsing in real-time</text>
+
+  <rect x="66" y="448" width="300" height="36" rx="6" fill="#fefce8" stroke="#fef08a" stroke-width="0.8"/>
+  <text x="78" y="462" font-size="9" fill="#a16207" font-weight="600" letter-spacing="0.05em">EMAIL DRAFTING</text>
+  <text x="78" y="476" font-size="10.5" fill="#1e293b" font-weight="500">STT-to-regex extraction from agent speech</text>
+
+  <rect x="374" y="448" width="310" height="36" rx="6" fill="#fefce8" stroke="#fef08a" stroke-width="0.8"/>
+  <text x="386" y="462" font-size="9" fill="#a16207" font-weight="600" letter-spacing="0.05em">GMAIL API</text>
+  <text x="386" y="476" font-size="10.5" fill="#1e293b" font-weight="500">MIME multipart with photo attachments</text>
+
+  <rect x="66" y="494" width="42" height="18" rx="4" fill="#fffbeb" stroke="#fde68a" stroke-width="0.8"/>
+  <text x="87" y="507" text-anchor="middle" font-size="9" fill="#d97706" font-weight="500">Hono</text>
+  <rect x="114" y="494" width="68" height="18" rx="4" fill="#fffbeb" stroke="#fde68a" stroke-width="0.8"/>
+  <text x="148" y="507" text-anchor="middle" font-size="9" fill="#d97706" font-weight="500">TypeScript</text>
+  <rect x="188" y="494" width="68" height="18" rx="4" fill="#fffbeb" stroke="#fde68a" stroke-width="0.8"/>
+  <text x="222" y="507" text-anchor="middle" font-size="9" fill="#d97706" font-weight="500">WebSocket</text>
+  <rect x="262" y="494" width="80" height="18" rx="4" fill="#fffbeb" stroke="#fde68a" stroke-width="0.8"/>
+  <text x="302" y="507" text-anchor="middle" font-size="9" fill="#d97706" font-weight="500">@google/genai</text>
+
+  <!-- Anti-Hallucination Box -->
+  <rect x="730" y="358" width="320" height="160" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="730" y="358" width="320" height="3" rx="10 10 0 0" fill="#ef4444" opacity="0.7"/>
+  <circle cx="754" cy="382" r="14" fill="#fef2f2"/>
+  <text x="754" y="386" text-anchor="middle" font-size="14">&#x1F6E1;&#xFE0F;</text>
+  <text x="776" y="386" font-size="14" font-weight="600" fill="#1e293b">Anti-Hallucination</text>
+  <text x="746" y="410" font-size="11" fill="#64748b">&#8226; Temperature 0.3 — deterministic</text>
+  <text x="746" y="428" font-size="11" fill="#64748b">&#8226; Exhaustive legal provision list only</text>
+  <text x="746" y="446" font-size="11" fill="#64748b">&#8226; Never fabricate citations or contacts</text>
+  <text x="746" y="464" font-size="11" fill="#64748b">&#8226; Image: describe visible evidence only</text>
+  <text x="746" y="482" font-size="11" fill="#64748b">&#8226; Defers to professionals when unsure</text>
+  <text x="746" y="500" font-size="11" fill="#64748b">&#8226; No image claims without explicit upload</text>
+
+  <!-- ====== CONNECTOR: Server → Cloud ====== -->
+  <line x1="400" y1="526" x2="400" y2="578" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+  <rect x="240" y="538" width="320" height="24" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="400" y="554" text-anchor="middle" font-size="10" fill="#3b82f6" font-weight="500" font-family="monospace">Gemini Live API — bidirectional audio + vision</text>
+
+  <line x1="750" y1="526" x2="750" y2="578" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+  <rect x="670" y="538" width="160" height="24" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="750" y="554" text-anchor="middle" font-size="10" fill="#3b82f6" font-weight="500" font-family="monospace">Gmail API — OAuth 2.0</text>
+
+  <!-- ====== CLOUD TIER ====== -->
+  <rect x="50" y="578" width="1000" height="3" rx="2" fill="url(#greenGrad)" opacity="0.7"/>
+
+  <!-- GCP Box -->
+  <rect x="50" y="588" width="650" height="115" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1.2" filter="url(#shadow)"/>
+  <circle cx="74" cy="612" r="14" fill="#ecfdf5"/>
+  <text x="74" y="616" text-anchor="middle" font-size="14">&#x2601;&#xFE0F;</text>
+  <text x="96" y="616" font-size="14" font-weight="600" fill="#1e293b">Google Cloud Platform</text>
+
+  <rect x="66" y="634" width="284" height="36" rx="6" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="0.8"/>
+  <text x="78" y="648" font-size="9" fill="#047857" font-weight="600" letter-spacing="0.05em">COMPUTE</text>
+  <text x="78" y="662" font-size="10.5" fill="#1e293b" font-weight="500">Cloud Run (containerized via Docker)</text>
+
+  <rect x="358" y="634" width="326" height="36" rx="6" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="0.8"/>
+  <text x="370" y="648" font-size="9" fill="#047857" font-weight="600" letter-spacing="0.05em">CAPABILITIES</text>
+  <text x="370" y="662" font-size="10.5" fill="#1e293b" font-weight="500">Live API, native audio, vision, transcription</text>
+
+  <rect x="66" y="678" width="58" height="18" rx="4" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="0.8"/>
+  <text x="95" y="691" text-anchor="middle" font-size="9" fill="#047857" font-weight="500">Cloud Run</text>
+  <rect x="130" y="678" width="90" height="18" rx="4" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="0.8"/>
+  <text x="175" y="691" text-anchor="middle" font-size="9" fill="#047857" font-weight="500">Gemini Live API</text>
+  <rect x="226" y="678" width="62" height="18" rx="4" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="0.8"/>
+  <text x="257" y="691" text-anchor="middle" font-size="9" fill="#047857" font-weight="500">Gmail API</text>
+  <rect x="294" y="678" width="46" height="18" rx="4" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="0.8"/>
+  <text x="317" y="691" text-anchor="middle" font-size="9" fill="#047857" font-weight="500">Docker</text>
+
+  <!-- Gemini Config Box -->
+  <rect x="730" y="588" width="320" height="115" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="730" y="588" width="320" height="3" rx="10 10 0 0" fill="#8b5cf6" opacity="0.7"/>
+  <circle cx="754" cy="612" r="14" fill="#f5f3ff"/>
+  <text x="754" y="616" text-anchor="middle" font-size="14">&#x2728;</text>
+  <text x="776" y="616" font-size="14" font-weight="600" fill="#1e293b">Gemini Config</text>
+  <text x="746" y="640" font-size="11" fill="#64748b">&#8226; gemini-2.5-flash-native-audio-latest</text>
+  <text x="746" y="658" font-size="11" fill="#64748b">&#8226; Voice: Zephyr (prebuilt, Gen Z tone)</text>
+  <text x="746" y="676" font-size="11" fill="#64748b">&#8226; Input + output audio transcription</text>
+  <text x="746" y="694" font-size="11" fill="#64748b">&#8226; System instruction: Nepal consumer law</text>
+
+</svg>
