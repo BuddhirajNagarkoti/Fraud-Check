@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, MicOff, Volume2, AlertTriangle, ArrowRight, MessageSquareText, Radio, Camera, Send, Mail, CheckCircle, Image, WifiOff, X, Sun, Moon, Scale, Zap, RotateCcw } from 'lucide-react';
+import { Mic, MicOff, Volume2, AlertTriangle, ArrowRight, MessageSquareText, Radio, Camera, Send, Mail, CheckCircle, Image, WifiOff, X, Sun, Moon, Scale, Zap, RotateCcw, ChevronDown, ChevronUp, Clock, Video } from 'lucide-react';
 import useWebSocket from 'react-use-websocket';
 import { useGoogleLogin } from '@react-oauth/google';
 import './index.css';
@@ -23,6 +23,11 @@ function App() {
     });
     const [toast, setToast] = useState(null);
     const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('fraud-check-onboarded'));
+    const [expandedViolations, setExpandedViolations] = useState(new Set());
+    const [subtitleVisible, setSubtitleVisible] = useState(false);
+    const [hasStartedConversation, setHasStartedConversation] = useState(false);
+    const [isLiveSession, setIsLiveSession] = useState(false);
+    const [isCameraReady, setIsCameraReady] = useState(false);
     const toastTimeoutRef = useRef(null);
     const wasConnectedRef = useRef(false);
 
@@ -62,8 +67,12 @@ function App() {
     const transcriptEndRef = useRef(null);
     const imgInputRef = useRef(null);
     const cameraInputRef = useRef(null);
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const cameraStreamRef = useRef(null);
 
     const agentSpeakingRef = useRef(false);
+    const prevAgentSpeakingRef = useRef(false);
     useEffect(() => { agentSpeakingRef.current = agentSpeaking; }, [agentSpeaking]);
 
     const showToast = useCallback((message, type = 'error', duration = 5000) => {
@@ -86,6 +95,13 @@ function App() {
         onClose: () => {
             if (wasConnectedRef.current) {
                 showToast('Connection lost. Reconnecting...', 'error');
+                if (cameraStreamRef.current) {
+                    cameraStreamRef.current.getTracks().forEach(t => t.stop());
+                    cameraStreamRef.current = null;
+                    if (videoRef.current) videoRef.current.srcObject = null;
+                    setIsLiveSession(false);
+                    setIsCameraReady(false);
+                }
                 if (micCleanupRef.current) {
                     micCleanupRef.current();
                     micCleanupRef.current = null;
@@ -107,12 +123,30 @@ function App() {
         wasConnectedRef.current = connected;
     }, [readyState, showToast]);
 
+    // Auto-switch to camera tab on mobile when live session starts
+    useEffect(() => {
+        if (isLiveSession && !isDesktop) {
+            setActiveTab('camera');
+        } else if (!isLiveSession && activeTab === 'camera') {
+            setActiveTab('live');
+        }
+    }, [isLiveSession, isDesktop]);
+
     // Auto-scroll transcripts
     useEffect(() => {
         if (isDesktop || activeTab === 'transcript') {
             transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
     }, [transcripts, activeTab, isDesktop]);
+
+    // Cleanup camera on unmount
+    useEffect(() => {
+        return () => {
+            if (cameraStreamRef.current) {
+                cameraStreamRef.current.getTracks().forEach(t => t.stop());
+            }
+        };
+    }, []);
 
     // Session persistence
     useEffect(() => {
@@ -130,10 +164,12 @@ function App() {
         setViolations([]);
         setLastEvidence(null);
         setSentEmails(new Set());
+        setExpandedViolations(new Set());
         localStorage.removeItem('fraud-check-transcripts');
         localStorage.removeItem('fraud-check-violations');
         localStorage.removeItem('fraud-check-evidence');
-        if (isRecording) stopRecording();
+        if (isLiveSession) stopLiveSession();
+        else if (isRecording) stopRecording();
     };
 
     const dismissOnboarding = () => {
@@ -142,16 +178,27 @@ function App() {
     };
 
     const scenarios = [
-        'Overcharged for a product',
-        'Defective item received',
-        'Online order not delivered',
-        'Fake or misleading ad',
+        { text: 'Overcharged for a product', icon: '\u{1F4B0}', sub: 'Charged above MRP or quoted price' },
+        { text: 'Defective item received', icon: '\u{1F4E6}', sub: 'Broken, damaged, or not as described' },
+        { text: 'Online order not delivered', icon: '\u{1F69A}', sub: 'Paid but never received the item' },
+        { text: 'Fake or misleading ad', icon: '\u{1F4E2}', sub: 'False claims or deceptive marketing' },
     ];
 
+    const toggleViolationExpand = (id) => {
+        setExpandedViolations(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
     const handleScenario = (text) => {
-        sendMessage(JSON.stringify({ text }));
+        setHasStartedConversation(true);
+        sendMessage(JSON.stringify({
+            text: `The user has selected a complaint scenario: "${text}". First greet them briefly, then respond directly by asking for specific details about this situation (what happened, where, when, how much, etc.) so you can identify the relevant consumer protection law.`
+        }));
         setTranscripts(prev => [...prev, { role: 'user', text, id: Date.now() }]);
-        startRecording();
     };
 
     // --- Playback ---
@@ -318,6 +365,142 @@ function App() {
         setIsRecording(false);
     };
 
+    // --- Live Session (Camera + Mic) ---
+    const startLiveSession = async () => {
+        try {
+            if (!playbackCtxRef.current) {
+                const pCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                playbackCtxRef.current = pCtx;
+            }
+            if (playbackCtxRef.current.state === 'suspended') {
+                await playbackCtxRef.current.resume();
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+            });
+
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.play();
+            }
+            cameraStreamRef.current = stream;
+            setIsCameraReady(true);
+
+            const micCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            await micCtx.audioWorklet.addModule('/mic-processor.js');
+            const micSource = micCtx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
+            const workletNode = new AudioWorkletNode(micCtx, 'mic-processor');
+            micSource.connect(workletNode);
+            workletNode.connect(micCtx.destination);
+
+            workletNode.port.onmessage = (e) => {
+                if (readyState !== 1) return;
+                const { buffer } = e.data;
+                const uint8 = new Uint8Array(buffer);
+                let binary = '';
+                for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+                sendMessage(JSON.stringify({ audio: btoa(binary) }));
+            };
+
+            micCleanupRef.current = () => {
+                workletNode.disconnect();
+                micSource.disconnect();
+                stream.getTracks().forEach(t => t.stop());
+                micCtx.close();
+            };
+
+            setIsRecording(true);
+            setIsLiveSession(true);
+            if (!hasStartedConversation) {
+                setHasStartedConversation(true);
+                sendMessage(JSON.stringify({
+                    text: 'The user just started a live session with their camera. Greet them warmly and let them know they can show you anything — receipts, products, packaging — and you\'ll help analyze it for their complaint. Keep it short, 1-2 sentences.'
+                }));
+            }
+        } catch (err) {
+            console.error('Live session error', err);
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                showToast('Camera/mic access denied. Please allow permissions.', 'error', 8000);
+            } else if (err.name === 'NotFoundError') {
+                showToast('No camera found. Please connect a camera.', 'error', 8000);
+            } else {
+                showToast('Could not start live session. Please try again.', 'error');
+            }
+        }
+    };
+
+    const stopLiveSession = () => {
+        if (micCleanupRef.current) {
+            micCleanupRef.current();
+            micCleanupRef.current = null;
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+        cameraStreamRef.current = null;
+        setIsRecording(false);
+        setIsLiveSession(false);
+        setIsCameraReady(false);
+    };
+
+    const toggleLiveSession = () => {
+        if (isLiveSession) {
+            stopLiveSession();
+        } else {
+            startLiveSession();
+        }
+    };
+
+    const captureFrame = (e) => {
+        if (!videoRef.current || !isCameraReady) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const ripple = document.createElement('div');
+        ripple.className = 'camera-ripple';
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+        e.currentTarget.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+
+        const video = videoRef.current;
+        const canvas = canvasRef.current || document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+
+        const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+
+        sendMessage(JSON.stringify({ image: base64, mimeType: 'image/jpeg' }));
+        sendMessage(JSON.stringify({
+            text: 'I just captured a frame from my live camera. Please describe only what you can actually see in this image. Does it support my complaint? If the image is unclear, say so.'
+        }));
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        setLastEvidence({ name: `capture-${timestamp}.jpg`, type: 'image/jpeg', base64 });
+
+        setTranscripts(prev => [...prev, {
+            role: 'user',
+            text: '\u{1F4F8} Live Capture',
+            id: Date.now(),
+            evidencePreview: `data:image/jpeg;base64,${base64}`
+        }]);
+
+        showToast('Frame captured & sent for analysis', 'success', 2000);
+    };
+
+    // Auto-start listening after agent finishes speaking
+    useEffect(() => {
+        if (prevAgentSpeakingRef.current && !agentSpeaking && !isRecording && !isLiveSession) {
+            startRecording();
+        }
+        prevAgentSpeakingRef.current = agentSpeaking;
+    }, [agentSpeaking]);
+
     const handlePhotoUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -331,7 +514,7 @@ function App() {
                 }));
                 // Auto-prompt Gemini to analyze the uploaded evidence
                 sendMessage(JSON.stringify({
-                    text: 'I just uploaded a photo as evidence. Please analyze this image and tell me what you see — does it support my complaint?'
+                    text: 'I just uploaded a photo as evidence. Please describe only what you can actually see in this image. Does it support my complaint? If the image is unclear, say so.'
                 }));
                 setTranscripts(prev => [...prev, { role: 'user', text: `\u{1F4F8} Uploaded Evidence: ${file.name}`, id: Date.now() }]);
             };
@@ -379,6 +562,17 @@ function App() {
     };
 
     const toggleRecording = () => {
+        if (isLiveSession) return; // Controlled by live session toggle instead
+        if (!hasStartedConversation) {
+            setHasStartedConversation(true);
+            // Send hidden trigger to AI to greet the user
+            sendMessage(JSON.stringify({
+                text: 'The user just tapped the orb to start the conversation. Please greet them warmly in a friendly, Gen Z style. Keep it short - just 1-2 sentences. Do not mention that they tapped an orb.'
+            }));
+            startRecording();
+            return;
+        }
+
         if (isRecording) {
             stopRecording();
         } else {
@@ -387,74 +581,90 @@ function App() {
     };
 
     const orbState = agentSpeaking ? 'speaking' : isRecording ? 'listening' : 'idle';
-    const statusText = agentSpeaking ? 'Speaking' : isRecording ? 'Listening...' : isConnected ? 'Tap to start' : 'Connecting...';
+    const statusText = agentSpeaking ? 'Speaking...' : isRecording ? 'Listening...' : isConnected ? 'Share your experience' : 'Connecting...';
     const unreadViolations = violations.length;
 
+    const formatTime = (ts) => {
+        const d = new Date(ts);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
     // --- Shared render functions ---
+    const latestTranscript = transcripts.length > 0 ? transcripts[transcripts.length - 1] : null;
+
+    useEffect(() => {
+        if (latestTranscript?.text) {
+            setSubtitleVisible(true);
+            const timer = setTimeout(() => {
+                setSubtitleVisible(false);
+            }, 5000); // 5 seconds auto fade
+            return () => clearTimeout(timer);
+        }
+    }, [latestTranscript?.text]);
+
     const renderOrbArea = () => (
         <div className="orb-area">
+            {latestTranscript && (
+                <div className={`live-subtitle ${latestTranscript.role} ${!subtitleVisible ? 'hidden' : ''}`}>
+                    <span className="subtitle-role">{latestTranscript.role === 'agent' ? 'Fraud Check' : 'You'}</span>
+                    <p className="subtitle-text">{latestTranscript.text}</p>
+                </div>
+            )}
             <button
                 className={`orb-btn ${orbState} ${!isConnected ? 'disabled' : ''}`}
                 onClick={isConnected ? toggleRecording : undefined}
                 disabled={!isConnected}
             >
                 <div className={`orb ${orbState}`}>
-                    <div className="orb-core">
-                        {agentSpeaking
-                            ? <Volume2 size={28} className="orb-icon" />
-                            : isRecording
-                                ? <MicOff size={28} className="orb-icon" />
-                                : <Mic size={28} className="orb-icon" />
-                        }
-                    </div>
-                    <div className="orb-ring ring-1" />
-                    <div className="orb-ring ring-2" />
+                    <div className="orb-glow" />
                     <div className="orb-ring ring-3" />
+                    <div className="orb-ring ring-2" />
+                    <div className="orb-ring ring-1" />
+                    <div className="orb-core">
+                        <div className="orb-gradient-mesh" />
+                        <div className="orb-icon-wrap">
+                            {agentSpeaking
+                                ? <Volume2 size={48} className="orb-icon" />
+                                : isRecording
+                                    ? <MicOff size={48} className="orb-icon" />
+                                    : <Mic size={48} className="orb-icon" />
+                            }
+                        </div>
+                    </div>
                 </div>
             </button>
             <p className={`orb-status ${orbState !== 'idle' ? 'active' : ''}`}>{statusText}</p>
-            <input
-                type="file"
-                accept="image/*"
-                ref={imgInputRef}
-                style={{ display: 'none' }}
-                onChange={handlePhotoUpload}
-            />
-            <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                ref={cameraInputRef}
-                style={{ display: 'none' }}
-                onChange={handlePhotoUpload}
-            />
+            <input type="file" accept="image/*" ref={imgInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
+            <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} style={{ display: 'none' }} onChange={handlePhotoUpload} />
             <div className="evidence-buttons">
-                <button
-                    className={`upload-btn ${!isConnected ? 'disabled' : ''}`}
-                    onClick={() => imgInputRef.current?.click()}
-                    disabled={!isConnected}
-                >
-                    <Image size={18} /> Upload Evidence
+                <button className={`upload-btn ${!isConnected ? 'disabled' : ''}`} onClick={() => imgInputRef.current?.click()} disabled={!isConnected}>
+                    <Image size={16} /> Upload Evidence
                 </button>
-                <button
-                    className={`upload-btn ${!isConnected ? 'disabled' : ''}`}
-                    onClick={() => cameraInputRef.current?.click()}
-                    disabled={!isConnected}
-                >
-                    <Camera size={18} /> Take Photo
+                <button className={`upload-btn ${!isConnected ? 'disabled' : ''}`} onClick={() => cameraInputRef.current?.click()} disabled={!isConnected}>
+                    <Camera size={16} /> Take Photo
                 </button>
             </div>
 
             {/* Scenario buttons — show when idle and no conversation yet */}
-            {transcripts.length === 0 && !isRecording && (
+            {transcripts.length === 0 && !isRecording && !agentSpeaking && (
                 <div className="scenario-buttons">
-                    {scenarios.map(s => (
-                        <button key={s} className="scenario-btn" onClick={() => handleScenario(s)} disabled={!isConnected}>
-                            {s}
+                    {scenarios.map((s, i) => (
+                        <button key={s.text} className="scenario-btn" style={{ animationDelay: `${i * 0.08}s` }} onClick={() => handleScenario(s.text)} disabled={!isConnected}>
+                            <span className="scenario-icon">{s.icon}</span>
+                            <span className="scenario-text">{s.text}</span>
+                            <span className="scenario-sub">{s.sub}</span>
                         </button>
                     ))}
                 </div>
             )}
+
+            <button
+                className={`live-session-btn ${!isConnected ? 'disabled' : ''}`}
+                onClick={toggleLiveSession}
+                disabled={!isConnected}
+            >
+                <Video size={16} /> Live Session
+            </button>
 
             {/* Live violation chips */}
             {violations.length > 0 && (
@@ -471,25 +681,68 @@ function App() {
         </div>
     );
 
+    const renderCameraArea = () => (
+        <div className="camera-area">
+            <div className="camera-feed-container" onClick={captureFrame}>
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="camera-feed"
+                />
+                {!isCameraReady && (
+                    <div className="camera-placeholder">
+                        <Video size={48} />
+                        <p>Starting camera...</p>
+                    </div>
+                )}
+                <div className="camera-tap-hint">
+                    <span>Tap to capture</span>
+                </div>
+            </div>
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+            <div className="camera-controls">
+                <button className="live-session-btn active" onClick={toggleLiveSession}>
+                    <Video size={16} /> End Live Session
+                </button>
+            </div>
+        </div>
+    );
+
     const renderTranscriptBubble = (t) => (
         <div key={t.id} className={`transcript-bubble ${t.role}`}>
-            <div className="role">{t.role === 'agent' ? 'Fraud Check' : t.role === 'user' ? 'You' : 'System'}</div>
+            <div className="bubble-header">
+                <span className="role">{t.role === 'agent' ? 'Fraud Check' : 'You'}</span>
+                <span className="bubble-time"><Clock size={10} /> {formatTime(t.id)}</span>
+            </div>
             <div className="transcript-text">{t.text}</div>
+
+            {t.evidencePreview && (
+                <div className="evidence-preview">
+                    <img src={t.evidencePreview} alt="Evidence" />
+                </div>
+            )}
 
             {t.violations && t.violations.length > 0 && (
                 <div className="bubble-violations">
                     {t.violations.map(v => (
-                        <div key={v.id} className="violation-card">
-                            <div className="violation-top">
+                        <div key={v.id} className={`violation-card ${expandedViolations.has(v.id) ? 'expanded' : ''}`}>
+                            <div className="violation-top" onClick={() => toggleViolationExpand(v.id)}>
                                 <AlertTriangle size={14} />
                                 <span className="violation-section">{v.section}</span>
                                 <span className="violation-law">{v.law}</span>
+                                {expandedViolations.has(v.id) ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </div>
-                            <p className="violation-text">{v.violation}</p>
-                            <div className="violation-action">
-                                <ArrowRight size={12} />
-                                <span>{v.next_step}</span>
-                            </div>
+                            {expandedViolations.has(v.id) && (
+                                <div className="violation-detail">
+                                    <p className="violation-text">{v.violation}</p>
+                                    <div className="violation-action">
+                                        <ArrowRight size={12} />
+                                        <span>{v.next_step}</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -528,11 +781,22 @@ function App() {
     const renderTranscriptArea = () => (
         <div className="transcript-area">
             {transcripts.length === 0 ? (
-                <div className="transcript-placeholder">
-                    Start speaking to see the live transcript...
+                <div className="empty-state">
+                    <div className="empty-orb-icon"><Mic size={24} /></div>
+                    <p>Start speaking to see the live transcript...</p>
                 </div>
             ) : (
-                transcripts.map(renderTranscriptBubble)
+                <>
+                    {transcripts.map(renderTranscriptBubble)}
+                    {agentSpeaking && (
+                        <div className="transcript-bubble agent">
+                            <div className="bubble-header"><span className="role">Fraud Check</span></div>
+                            <div className="typing-indicator">
+                                <span /><span /><span />
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
             <div ref={transcriptEndRef} />
         </div>
@@ -540,9 +804,9 @@ function App() {
 
     return (
         <div className="live-container">
-            <div className={`bg-gradient ${isRecording ? 'listening' : ''}`} />
+            <div className={`bg-gradient ${orbState}`} />
 
-            {/* Top bar */}
+            {/* Glass top bar */}
             <div className="top-bar">
                 <div className="brand">
                     <span className="shield">{'\u{1F6E1}\uFE0F'}</span>
@@ -564,19 +828,19 @@ function App() {
                 </div>
             </div>
 
-            {/* Mobile: Tab switcher (hidden on desktop via CSS) */}
+            {/* Mobile: Tab switcher */}
             <div className="tab-bar">
-                <button
-                    className={`tab-btn ${activeTab === 'live' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('live')}
-                >
+                <button className={`tab-btn ${activeTab === 'live' ? 'active' : ''}`} onClick={() => setActiveTab('live')}>
                     <Radio size={16} />
                     <span>Live</span>
                 </button>
-                <button
-                    className={`tab-btn ${activeTab === 'transcript' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('transcript')}
-                >
+                {isLiveSession && (
+                    <button className={`tab-btn ${activeTab === 'camera' ? 'active' : ''}`} onClick={() => setActiveTab('camera')}>
+                        <Video size={16} />
+                        <span>Camera</span>
+                    </button>
+                )}
+                <button className={`tab-btn ${activeTab === 'transcript' ? 'active' : ''}`} onClick={() => setActiveTab('transcript')}>
                     <MessageSquareText size={16} />
                     <span>Transcript</span>
                     {unreadViolations > 0 && activeTab !== 'transcript' && (
@@ -590,20 +854,17 @@ function App() {
                 <div className="desktop-panels">
                     <div className="panel-live">
                         <div className="panel-header">
-                            <Radio size={14} />
-                            <span>Live</span>
+                            {isLiveSession ? <><Video size={14} /><span>Live Camera</span></> : <><Radio size={14} /><span>Live</span></>}
                         </div>
                         <div className="tab-content live-tab">
-                            {renderOrbArea()}
+                            {isLiveSession ? renderCameraArea() : renderOrbArea()}
                         </div>
                     </div>
                     <div className="panel-transcript">
                         <div className="panel-header">
                             <MessageSquareText size={14} />
                             <span>Transcript</span>
-                            {unreadViolations > 0 && (
-                                <span className="tab-badge">{unreadViolations}</span>
-                            )}
+                            {unreadViolations > 0 && <span className="tab-badge">{unreadViolations}</span>}
                         </div>
                         <div className="tab-content transcript-tab">
                             {renderTranscriptArea()}
@@ -612,10 +873,14 @@ function App() {
                 </div>
             ) : (
                 <>
-                    {/* Mobile: tab content */}
                     {activeTab === 'live' && (
                         <div className="tab-content live-tab">
-                            {renderOrbArea()}
+                            {isLiveSession ? renderCameraArea() : renderOrbArea()}
+                        </div>
+                    )}
+                    {activeTab === 'camera' && (
+                        <div className="tab-content live-tab">
+                            {renderCameraArea()}
                         </div>
                     )}
                     {activeTab === 'transcript' && (
@@ -626,7 +891,7 @@ function App() {
                 </>
             )}
 
-            {/* Toast notification */}
+            {/* Toast */}
             {toast && (
                 <div className={`toast toast-${toast.type}`}>
                     {toast.type === 'error' && <WifiOff size={16} />}
@@ -642,16 +907,22 @@ function App() {
                     <div className="onboarding-card">
                         <span className="onboarding-shield">{'\u{1F6E1}\uFE0F'}</span>
                         <h2>Welcome to Fraud Check</h2>
+                        <p className="onboarding-tagline">Your AI-powered consumer rights companion</p>
                         <div className="onboarding-steps">
-                            <div className="onboarding-step">
+                            <div className="onboarding-step" style={{ animationDelay: '0.1s' }}>
+                                <div className="step-number">1</div>
                                 <div className="onboarding-icon"><Mic size={24} /></div>
                                 <p>Tell us your problem</p>
                             </div>
-                            <div className="onboarding-step">
+                            <div className="step-connector" />
+                            <div className="onboarding-step" style={{ animationDelay: '0.25s' }}>
+                                <div className="step-number">2</div>
                                 <div className="onboarding-icon"><Scale size={24} /></div>
                                 <p>We'll find the law</p>
                             </div>
-                            <div className="onboarding-step">
+                            <div className="step-connector" />
+                            <div className="onboarding-step" style={{ animationDelay: '0.4s' }}>
+                                <div className="step-number">3</div>
                                 <div className="onboarding-icon"><Zap size={24} /></div>
                                 <p>Take action</p>
                             </div>

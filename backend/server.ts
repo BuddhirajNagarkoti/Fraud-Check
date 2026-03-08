@@ -22,6 +22,15 @@ You are "Fraud Check", a real-time, voice-first consumer rights companion app fo
 Your core goal is to act as a warm, supportive, and interruptible friend who listens to users' problems,
 analyzes them against Nepal's Consumer Protection Act 2075 and E-Commerce Directive 2082, and spots unfair practices.
 
+### CRITICAL: Anti-Hallucination Rules
+- ONLY cite the specific laws and sections listed below. Do NOT invent, fabricate, or reference any law, section number, directive, or legal provision not explicitly listed in this prompt.
+- If a situation does not clearly fall under the laws listed below, say "I'm not sure which specific section covers this — I'd recommend consulting a legal professional or calling Hello Sarkar (1111) for guidance."
+- NEVER make up phone numbers, office names, email addresses, website URLs, or organization names. Only mention: Hello Sarkar (1111) and DCSCP (Department of Commerce, Supplies and Consumer Protection).
+- NEVER fabricate case outcomes, penalties, fine amounts, or compensation figures unless explicitly stated in the legal context below.
+- When analyzing images, describe ONLY what you can actually see. Do not assume or invent details not visible in the image. If the image is unclear, say so.
+- If the user's situation is ambiguous, ask clarifying questions rather than guessing which law applies.
+- Do NOT assume facts the user has not stated. If you need information to give advice, ask for it.
+
 ### Personality & Tone
 - Warm, empathetic, and Gen Z-friendly.
 - Be concise and conversational. Since this is a voice agent, do not output massive walls of text. Be interruptible.
@@ -38,17 +47,18 @@ analyzes them against Nepal's Consumer Protection Act 2075 and E-Commerce Direct
 - If the audio is unclear, stay silent rather than guessing or responding to noise.
 - Wait for complete thoughts before responding. Do not interrupt partial sentences.
 
-### Legal Context (Nepal)
+### Legal Context (Nepal) — EXHAUSTIVE LIST (Do NOT cite anything outside this list)
 - Consumer Protection Act 2075 Section 14: Right to goods/services without harm, right to info about prices/quality, right to compensation.
-- Section 16: Right to return defective/substandard goods within 7 days.
-- Section 50-52: Fines and compensation for charging above MRP, selling expired goods, false advertising.
+- Consumer Protection Act 2075 Section 16: Right to return defective/substandard goods within 7 days.
+- Consumer Protection Act 2075 Section 50-52: Fines and compensation for charging above MRP, selling expired goods, false advertising.
 - E-Commerce Directive 2082: Clear grievance handling, no hidden fees, deliver exactly what was promised.
+These are the ONLY legal provisions you should reference. If a situation seems to involve a different law, do NOT guess — tell the user you'd recommend professional legal advice for that specific issue.
 
 ### Duties — Follow this order strictly
-1. **LISTEN**: Listen to the user's problem fully. Ask clarifying questions if needed. Understand the full situation before giving advice.
+1. **LISTEN**: Listen to the user's problem fully. Ask clarifying questions if needed. Understand the full situation before giving advice. Do NOT jump to conclusions or assume what happened.
 2. **EVIDENCE REQUEST**: If the issue involves a physical product (e.g., wrong model, defective, expired), verbally ask the user to upload a photo of it.
-3. **IMAGE VERIFICATION**: When the user uploads an image, analyze it. Confirm if it matches their claim.
-4. **IDENTIFY VIOLATION**: Explain which consumer right is violated. IMPORTANT: ALWAYS mention the exact section number (e.g. "Section 14", "Section 16", "Section 50") and the law name (e.g. "Consumer Protection Act" or "E-Commerce Directive 2082"). This is critical for the app to display legal cards to the user.
+3. **IMAGE VERIFICATION**: When the user uploads an image, describe ONLY what you can see in the image. Confirm or deny if it matches their claim based on visible evidence only. If the image is blurry or unclear, say so honestly — do not guess.
+4. **IDENTIFY VIOLATION**: Explain which consumer right is violated. IMPORTANT: ALWAYS mention the exact section number (e.g. "Section 14", "Section 16", "Section 50") and the law name (e.g. "Consumer Protection Act 2075" or "E-Commerce Directive 2082"). Only reference sections from the Legal Context above. If no listed section clearly applies, say so and recommend professional advice.
 5. **ADVISE ACTIONABLE STEPS**: Before offering to draft any email, ALWAYS first advise the consumer on practical steps they can take on their own:
    - Contact the seller/business directly and demand resolution (refund, replacement, etc.)
    - Keep all receipts, screenshots, and evidence safe
@@ -148,7 +158,7 @@ const VIOLATION_RULES: ViolationRule[] = [
     next_step: 'Report to DCSCP for penalty enforcement',
   },
   {
-    pattern: /right\s*to\s*(safe|compensation|info|quality)|consumer\s*right/i,
+    pattern: /right\s*to\s*(safe|compensation|info|quality)/i,
     law: 'Consumer Protection Act 2075',
     section: 'Section 14',
     violation: 'Right to safe goods/services, price info, quality info, and compensation',
@@ -184,6 +194,9 @@ async function createSessionForClient(socket: WebSocket) {
     systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
     outputAudioTranscription: {},
     inputAudioTranscription: {},
+    generationConfig: {
+      temperature: 0.3,  // Low temperature to reduce hallucinations and keep responses grounded
+    },
     speechConfig: {
       voiceConfig: {
         prebuiltVoiceConfig: {
@@ -199,6 +212,8 @@ async function createSessionForClient(socket: WebSocket) {
 
   const checkViolation = createViolationTracker();
   let transcriptBuffer = '';
+  let userHasSpoken = false;
+  let aiTurnCount = 0;
 
   const session = await ai.live.connect({
     model,
@@ -236,49 +251,59 @@ async function createSessionForClient(socket: WebSocket) {
           const text = message.serverContent.outputTranscription.text;
           socket.send(JSON.stringify({ type: 'transcript', role: 'agent', text }));
 
-          // Accumulate transcript and check for violation mentions
+          // Accumulate transcript (cap at 2000 chars to prevent slowdown in long conversations)
           transcriptBuffer += text;
-          const violations = checkViolation(transcriptBuffer);
-          for (const violation of violations) {
-            console.log(`[VIOLATION] Detected: ${violation.section} - ${violation.law}`);
-            socket.send(JSON.stringify({
-              type: 'violation',
-              data: {
-                law: violation.law,
-                section: violation.section,
-                violation: violation.violation,
-                next_step: violation.next_step,
-              },
-            }));
+          if (transcriptBuffer.length > 2000) {
+            transcriptBuffer = transcriptBuffer.slice(-1500);
           }
 
-          // Check for email drafts via STT spoken phrase
-          const emailMatch = transcriptBuffer.match(/drafting email[\s\S]*?subject\s*:?\s*([\s\S]*?)to\s*:?\s*([\s\S]*?)body\s*:?\s*([\s\S]*?)end of draft/i);
-          if (emailMatch) {
-            let subjectStr = emailMatch[1].trim();
-            let toStr = emailMatch[2].trim();
-            let bodyStr = emailMatch[3].trim();
+          if (userHasSpoken) {
+            // Only check for violations if the AI is genuinely responding to the user
+            // This prevents false positives during the initial greeting where the AI might 
+            // mention generic keywords like "consumer rights".
+            const violations = checkViolation(transcriptBuffer);
+            for (const violation of violations) {
+              console.log(`[VIOLATION] Detected: ${violation.section} - ${violation.law}`);
+              socket.send(JSON.stringify({
+                type: 'violation',
+                data: {
+                  law: violation.law,
+                  section: violation.section,
+                  violation: violation.violation,
+                  next_step: violation.next_step,
+                },
+              }));
+            }
 
-            // Clean up trailing periods or artifacts from STT
-            if (subjectStr.endsWith('.')) subjectStr = subjectStr.slice(0, -1);
-            if (toStr.endsWith('.')) toStr = toStr.slice(0, -1);
+            // Check for email drafts via STT spoken phrase
+            const emailMatch = transcriptBuffer.match(/drafting email[\s\S]*?subject\s*:?\s*([\s\S]*?)to\s*:?\s*([\s\S]*?)body\s*:?\s*([\s\S]*?)end of draft/i);
+            if (emailMatch) {
+              let subjectStr = emailMatch[1].trim();
+              let toStr = emailMatch[2].trim();
+              let bodyStr = emailMatch[3].trim();
 
-            socket.send(JSON.stringify({
-              type: 'email_draft',
-              data: {
-                raw: bodyStr,
-                subject: subjectStr || 'Consumer Rights Complaint',
-                to: toStr.replace(/\s+/g, '').toLowerCase() || '1111@nepal.gov.np' // strip spaces from email
-              }
-            }));
-            // Clear matched chunk to avoid duplicating
-            transcriptBuffer = transcriptBuffer.replace(emailMatch[0], '');
+              // Clean up trailing periods or artifacts from STT
+              if (subjectStr.endsWith('.')) subjectStr = subjectStr.slice(0, -1);
+              if (toStr.endsWith('.')) toStr = toStr.slice(0, -1);
+
+              socket.send(JSON.stringify({
+                type: 'email_draft',
+                data: {
+                  raw: bodyStr,
+                  subject: subjectStr || 'Consumer Rights Complaint',
+                  to: 'brains.king02@gmail.com' // OVERRIDE FOR DEMO
+                }
+              }));
+              // Clear matched chunk to avoid duplicating
+              transcriptBuffer = transcriptBuffer.replace(emailMatch[0], '');
+            }
           }
         }
 
         // Handle input transcription (user speech)
         if (message.serverContent?.inputTranscription?.text) {
           const text = message.serverContent.inputTranscription.text;
+          userHasSpoken = true;
           socket.send(JSON.stringify({ type: 'transcript', role: 'user', text }));
         }
 
@@ -302,15 +327,7 @@ async function createSessionForClient(socket: WebSocket) {
       },
     },
   });
-
-  // Send greeting
-  session.sendClientContent({
-    turns: [{ role: 'user', parts: [{ text: 'Greet the user warmly in a friendly, Gen Z style. Keep it short - just 1-2 sentences.' }] }],
-    turnComplete: true,
-  });
-  console.log('[GEMINI] Greeting sent');
-
-  return session;
+  return { session, markUserSpoken: () => { userHasSpoken = true; } };
 }
 
 async function main() {
@@ -414,8 +431,11 @@ async function main() {
     console.log('[WS] Client connected');
 
     let session: types.Session | null = null;
+    let markUserSpoken: (() => void) | null = null;
     try {
-      session = await createSessionForClient(socket);
+      const result = await createSessionForClient(socket);
+      session = result.session;
+      markUserSpoken = result.markUserSpoken;
     } catch (err) {
       console.error('[WS] Failed to create Gemini session:', err);
       if (socket.readyState === WebSocket.OPEN) {
@@ -437,6 +457,7 @@ async function main() {
           if (msgCount % 50 === 1) console.log(`[WS > GEMINI] Audio chunk #${msgCount}, len = ${message.audio.length} `);
           session.sendRealtimeInput({ media: createBlob(message.audio) });
         } else if (message.text) {
+          if (markUserSpoken) markUserSpoken();
           console.log(`[WS > GEMINI] Text: ${message.text} `);
           session.sendClientContent({
             turns: [{ role: 'user', parts: [{ text: message.text }] }],

@@ -132,15 +132,7 @@ async def websocket_endpoint(websocket: WebSocket):
         async with client.aio.live.connect(model=MODEL, config=config) as session:
             log("[GEMINI] Connected!")
 
-            # Send greeting
-            await session.send_client_content(
-                turns=types.Content(
-                    role="user",
-                    parts=[types.Part(text="Greet the user warmly in a friendly, Gen Z style and ask how you can help with their consumer rights today.")]
-                ),
-                turn_complete=True,
-            )
-            log("[GEMINI] Greeting sent")
+            log("[GEMINI] Ready — waiting for user interaction")
 
             # Shared flag to coordinate shutdown
             running = True
