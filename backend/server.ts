@@ -210,8 +210,6 @@ async function createSessionForClient(socket: WebSocket) {
     // Violations are detected from transcript text instead
   };
 
-  console.log(`[GEMINI] Creating new session for client...`);
-
   const checkViolation = createViolationTracker();
   let transcriptBuffer = '';
   let userHasSpoken = false;
@@ -221,17 +219,9 @@ async function createSessionForClient(socket: WebSocket) {
     model,
     config,
     callbacks: {
-      onopen: () => {
-        console.log('[GEMINI] Session opened');
-      },
+      onopen: () => {},
       onmessage: (message: types.LiveServerMessage) => {
         if (socket.readyState !== WebSocket.OPEN) return;
-
-        // Debug: log message keys
-        const keys = Object.keys(message).filter(k => (message as any)[k] != null);
-        if (keys.some(k => k !== 'serverContent') || message.toolCall) {
-          console.log(`[GEMINI] Message keys: ${keys.join(', ')}`);
-        }
 
         // Handle audio + text data from model turns
         if (
@@ -241,9 +231,6 @@ async function createSessionForClient(socket: WebSocket) {
           message.serverContent.modelTurn.parts.forEach((part) => {
             if (part.inlineData?.data) {
               socket.send(JSON.stringify({ type: 'audio', data: part.inlineData.data }));
-            }
-            if (part.text) {
-              console.log(`[GEMINI] Text part: ${part.text.substring(0, 100)}`);
             }
           });
         }
@@ -265,7 +252,6 @@ async function createSessionForClient(socket: WebSocket) {
             // mention generic keywords like "consumer rights".
             const violations = checkViolation(transcriptBuffer);
             for (const violation of violations) {
-              console.log(`[VIOLATION] Detected: ${violation.section} - ${violation.law}`);
               socket.send(JSON.stringify({
                 type: 'violation',
                 data: {
@@ -311,7 +297,6 @@ async function createSessionForClient(socket: WebSocket) {
 
         // Handle interruption
         if (message.serverContent?.interrupted) {
-          console.log('[GEMINI] Interruption detected');
           socket.send(JSON.stringify({ type: 'interrupt' }));
         }
       },
@@ -456,17 +441,14 @@ async function main() {
         msgCount++;
 
         if (message.audio) {
-          if (msgCount % 50 === 1) console.log(`[WS > GEMINI] Audio chunk #${msgCount}, len = ${message.audio.length} `);
           session.sendRealtimeInput({ media: createBlob(message.audio) });
         } else if (message.text) {
           if (markUserSpoken) markUserSpoken();
-          console.log(`[WS > GEMINI] Text: ${message.text} `);
           session.sendClientContent({
             turns: [{ role: 'user', parts: [{ text: message.text }] }],
             turnComplete: true,
           });
         } else if (message.image) {
-          console.log(`[WS > GEMINI] Image received.MimeType: ${message.mimeType} `);
           session.sendRealtimeInput({
             media: {
               mimeType: message.mimeType || 'image/jpeg',
