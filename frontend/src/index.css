@@ -1973,3 +1973,8 @@ body {
     opacity: 0.4;
     cursor: not-allowed;
 }
+
+[data-theme="light"] .live-session-btn {
+    border-color: rgba(0, 0, 0, 0.12);
+    background: rgba(0, 0, 0, 0.03);
+}
