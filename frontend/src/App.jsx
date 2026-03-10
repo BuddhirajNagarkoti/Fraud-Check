@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, MicOff, Volume2, AlertTriangle, ArrowRight, MessageSquareText, Radio, Camera, Send, Mail, CheckCircle, Image, WifiOff, X, Sun, Moon, Scale, Zap, RotateCcw, ChevronDown, ChevronUp, Clock, Video } from 'lucide-react';
+import { Mic, MicOff, Volume2, AlertTriangle, ArrowRight, MessageSquareText, Radio, Camera, Send, Mail, CheckCircle, Image, WifiOff, X, Sun, Moon, Scale, Zap, RotateCcw, ChevronDown, ChevronUp, Clock, Video, IndianRupee, PackageX, Truck, Megaphone } from 'lucide-react';
 import useWebSocket from 'react-use-websocket';
 import './index.css';
 
@@ -190,10 +190,10 @@ function App() {
     };
 
     const scenarios = [
-        { text: 'Overcharged for a product', icon: '\u{1F4B0}' },
-        { text: 'Defective item received', icon: '\u{1F4E6}' },
-        { text: 'Online order not delivered', icon: '\u{1F69A}' },
-        { text: 'Fake or misleading ad', icon: '\u{1F4E2}' },
+        { text: 'Overcharged for a product', label: 'Overcharge', Icon: IndianRupee, color: 'green' },
+        { text: 'Defective item received', label: 'Defective', Icon: PackageX, color: 'amber' },
+        { text: 'Online order not delivered', label: 'Delivery', Icon: Truck, color: 'purple' },
+        { text: 'Fake or misleading ad', label: 'Fake Ad', Icon: Megaphone, color: 'red' },
     ];
 
     const toggleViolationExpand = (id) => {
@@ -731,12 +731,11 @@ function App() {
 
             {/* Scenario buttons — show when idle and no conversation yet */}
             {transcripts.length === 0 && !isRecording && !agentSpeaking && (
-                <div className="scenario-buttons">
+                <div className="scenario-grid">
                     {scenarios.map((s, i) => (
-                        <button key={s.text} className="scenario-btn" style={{ animationDelay: `${i * 0.08}s` }} onClick={() => handleScenario(s.text)} disabled={!isConnected}>
-                            <span className="scenario-icon">{s.icon}</span>
-                            <span className="scenario-text">{s.text}</span>
-
+                        <button key={s.text} className={`scenario-tile scenario-${s.color}`} style={{ animationDelay: `${i * 0.08}s` }} onClick={() => handleScenario(s.text)} disabled={!isConnected}>
+                            <span className="scenario-icon-wrap"><s.Icon size={24} /></span>
+                            <span className="scenario-label">{s.label}</span>
                         </button>
                     ))}
                 </div>

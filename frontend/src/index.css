@@ -831,103 +831,74 @@ body {
 }
 
 /* ===== Scenario Buttons ===== */
-.scenario-buttons {
+/* ===== Scenario Icon Grid ===== */
+.scenario-grid {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  justify-content: center;
   margin-top: 24px;
-  padding: 0 24px;
-  width: 100%;
-  max-width: 380px;
   z-index: 2;
 }
 
-.scenario-btn {
+.scenario-tile {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
+  gap: 8px;
+  padding: 16px 8px 12px;
+  border-radius: 16px;
+  width: 76px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
   font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  text-align: left;
   animation: scenario-in 0.4s ease-out both;
 }
 
-.scenario-btn:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.scenario-btn:nth-child(2) {
-  animation-delay: 0.06s;
-}
-
-.scenario-btn:nth-child(3) {
-  animation-delay: 0.12s;
-}
-
-.scenario-btn:nth-child(4) {
-  animation-delay: 0.18s;
-}
-
 @keyframes scenario-in {
-  0% {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-.scenario-btn:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: rgba(74, 158, 255, 0.06);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+.scenario-tile:hover:not(:disabled) {
+  color: var(--text);
+  transform: translateY(-2px);
 }
 
-.scenario-btn:disabled {
+.scenario-tile:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.scenario-icon {
-  font-size: 20px;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+.scenario-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-2);
-  border-radius: 10px;
 }
 
-.scenario-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.scenario-title {
-  font-size: 13px;
-  font-weight: 600;
+.scenario-label {
+  text-align: center;
   line-height: 1.3;
 }
 
-.scenario-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
+/* Color variants */
+.scenario-green .scenario-icon-wrap { background: rgba(74, 255, 138, 0.10); color: #4aff8a; }
+.scenario-amber .scenario-icon-wrap { background: rgba(255, 171, 64, 0.12); color: #ffab40; }
+.scenario-purple .scenario-icon-wrap { background: rgba(130, 120, 255, 0.12); color: #8278ff; }
+.scenario-red .scenario-icon-wrap { background: rgba(255, 82, 82, 0.12); color: #ff5252; }
+
+/* Light mode adjustments */
+[data-theme="light"] .scenario-green .scenario-icon-wrap { background: rgba(0, 168, 107, 0.10); color: #00a86b; }
+[data-theme="light"] .scenario-amber .scenario-icon-wrap { background: rgba(230, 140, 0, 0.10); color: #e68c00; }
+[data-theme="light"] .scenario-purple .scenario-icon-wrap { background: rgba(100, 90, 220, 0.10); color: #645adc; }
+[data-theme="light"] .scenario-red .scenario-icon-wrap { background: rgba(220, 50, 50, 0.10); color: #dc3232; }
 
 /* ===== Session Summary ===== */
 .session-summary {
@@ -1827,8 +1798,12 @@ body {
     gap: 8px;
   }
 
-  .scenario-buttons {
-    padding: 0 16px;
+  .scenario-grid {
+    gap: 6px;
+  }
+  .scenario-tile {
+    width: 68px;
+    padding: 14px 6px 10px;
   }
 }
 
