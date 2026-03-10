@@ -34,7 +34,7 @@ function App() {
     const [theme, setTheme] = useState(() => {
         const saved = localStorage.getItem('fraud-check-theme');
         if (saved) return saved;
-        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        return 'dark';
     });
 
     // Desktop detection
@@ -190,10 +190,10 @@ function App() {
     };
 
     const scenarios = [
-        { text: 'Overcharged for a product', icon: '\u{1F4B0}', sub: 'Charged above MRP or quoted price' },
-        { text: 'Defective item received', icon: '\u{1F4E6}', sub: 'Broken, damaged, or not as described' },
-        { text: 'Online order not delivered', icon: '\u{1F69A}', sub: 'Paid but never received the item' },
-        { text: 'Fake or misleading ad', icon: '\u{1F4E2}', sub: 'False claims or deceptive marketing' },
+        { text: 'Overcharged for a product', icon: '\u{1F4B0}' },
+        { text: 'Defective item received', icon: '\u{1F4E6}' },
+        { text: 'Online order not delivered', icon: '\u{1F69A}' },
+        { text: 'Fake or misleading ad', icon: '\u{1F4E2}' },
     ];
 
     const toggleViolationExpand = (id) => {
@@ -736,7 +736,7 @@ function App() {
                         <button key={s.text} className="scenario-btn" style={{ animationDelay: `${i * 0.08}s` }} onClick={() => handleScenario(s.text)} disabled={!isConnected}>
                             <span className="scenario-icon">{s.icon}</span>
                             <span className="scenario-text">{s.text}</span>
-                            <span className="scenario-sub">{s.sub}</span>
+
                         </button>
                     ))}
                 </div>
@@ -907,16 +907,12 @@ function App() {
                     <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
                         {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                     </button>
-                    <div className={`connection-badge ${isConnected ? 'online' : ''}`}>
-                        <span className="dot" />
-                        {isConnected ? 'Connected' : 'Offline'}
-                    </div>
                 </div>
             </div>
 
             {/* Mobile: Tab switcher */}
             <div className="tab-bar">
-                <button className={`tab-btn ${activeTab === 'live' ? 'active' : ''}`} onClick={() => setActiveTab('live')}>
+                <button className={`tab-btn ${activeTab === 'live' ? 'active' : ''} ${isConnected ? 'connected' : ''}`} onClick={() => setActiveTab('live')}>
                     <Radio size={16} />
                     <span>Live</span>
                 </button>
